@@ -29,11 +29,42 @@ def _within(session: ProductSession, relative_path: str) -> Path:
     return path
 
 
-def resolve_selected_hatch_run(session_root: Path) -> dict[str, str]:
-    session = ProductSession.create(Path(session_root))
-    state = str(_load(session.root / "session.json")["state"])
-    if state not in {"candidate_selected", "base_accepted", "animation_ready", "package_validated", "installed"}:
-        raise ValueError("official Hatch animation requires an explicit candidate selection")
+def _resolve_board_first(session: ProductSession) -> dict[str, str]:
+    lock = _load(session.root / "identity-lock.json")
+    candidate_id = str(lock.get("candidate_id", ""))
+    hero = _within(session, str(lock.get("identity_hero", "")))
+    board = _within(session, str(lock.get("identity_board", "")))
+    base = _within(session, str(lock.get("canonical_base", "")))
+    reference = _within(session, str(lock.get("hatch_reference", "")))
+    if (
+        _sha256(hero) != lock.get("hero_sha256")
+        or _sha256(board) != lock.get("board_sha256")
+        or _sha256(base) != lock.get("base_sha256")
+        or _sha256(reference) != lock.get("hatch_reference_sha256")
+        or _sha256(reference) != _sha256(hero)
+    ):
+        raise ValueError("locked Identity Board, hero, or base hash no longer matches")
+    run_dir = (session.root / str(lock.get("hatch_run_dir", ""))).resolve()
+    if not run_dir.is_dir() or session.root not in run_dir.parents or base != run_dir / "references" / "canonical-base.png":
+        raise ValueError("locked Hatch run or canonical base is invalid")
+    jobs = _load(run_dir / "imagegen-jobs.json").get("jobs", [])
+    base_job = next((item for item in jobs if isinstance(item, dict) and item.get("id") == "base"), None)
+    if not isinstance(base_job, dict) or base_job.get("status") != "complete" or not (run_dir / "pet_request.json").is_file():
+        raise ValueError("locked official Hatch run is incomplete")
+    return {
+        "candidate_id": candidate_id,
+        "run_dir": str(run_dir),
+        "canonical_base": str(base),
+        "identity_hero": str(hero),
+        "identity_board": str(board),
+        "character_bible": str(board),
+        "hero_sha256": str(lock["hero_sha256"]),
+        "base_sha256": str(lock["base_sha256"]),
+        "board_sha256": str(lock["board_sha256"]),
+    }
+
+
+def _resolve_legacy(session: ProductSession) -> dict[str, str]:
     selection = _load(session.root / "selection.json")
     candidate_id = str(selection.get("candidate_id", ""))
     base = _within(session, str(selection.get("base_path", "")))
@@ -63,6 +94,16 @@ def resolve_selected_hatch_run(session_root: Path) -> dict[str, str]:
         "base_sha256": str(selection["base_sha256"]),
         "board_sha256": str(selection["board_sha256"]),
     }
+
+
+def resolve_selected_hatch_run(session_root: Path) -> dict[str, str]:
+    session = ProductSession.create(Path(session_root))
+    state = str(_load(session.root / "session.json")["state"])
+    if state not in {"candidate_selected", "base_accepted", "animation_ready", "package_validated", "installed"}:
+        raise ValueError("official Hatch animation requires an explicit candidate selection")
+    if (session.root / "identity-lock.json").is_file():
+        return _resolve_board_first(session)
+    return _resolve_legacy(session)
 
 
 def main() -> int:

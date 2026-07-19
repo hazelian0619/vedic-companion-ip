@@ -1,6 +1,6 @@
-# Character Bible Contract
+# Board-First Candidate Contract
 
-The portable candidate manifest is JSON with exactly three `candidates`. A candidate may contain only:
+The portable candidate manifest is JSON with exactly three `candidates`. New production candidates must include the following visual-safe fields:
 
 ```json
 {
@@ -9,24 +9,26 @@ The portable candidate manifest is JSON with exactly three `candidates`. A candi
   "display_name": "User-facing name",
   "description": "One visual-safe sentence",
   "form_metaphor": "Visual metaphor",
+  "body_grammar": "Specific non-generic body construction",
   "silhouette_tokens": ["visual token"],
-  "palette_tokens": ["visual token"],
-  "material_tokens": ["visual token"],
+  "relationship_gesture": "How it makes contact with the user",
+  "tactile_hook": "A material detail that invites touch",
+  "palette_tokens": ["color relationship"],
+  "material_tokens": ["material relationship"],
   "signature_hook": "Stable visual signature",
+  "default_form_avoids": ["forbidden generic construction"],
   "interaction_signature": "Visual-safe companion behavior",
-  "board_composition": "Visual-safe information reading direction",
+  "board_composition": "Character-led information reading direction",
   "anti_drift": ["visual constraint"]
 }
 ```
 
-The compiler emits every field above. For legacy validated candidate manifests only, `interaction_signature` and `board_composition` may be omitted; the runner keeps backward compatibility but new production candidates must provide both. The manifest is invalid if it contains personal data, chart terminology, source evidence, rationale, internal IDs, or fields beyond this schema.
+The manifest is invalid if it contains personal data, chart terminology, source evidence, rationale, internal IDs, or unrecognized fields. Palette and material are local relationships, not a global product palette or style theme.
 
-For the pre-hatch imagev2 design branch, use the safe candidate fields, the official hatch seed identity fields, and one user-approved Character Bible board reference. Generate the branch board first, then generate its identity reference from that board as the only image input.
+`body_grammar` must describe a character that can be recognized by silhouette and gesture, not only color or a central ornament. `default_form_avoids` must explicitly rule out symmetric toy pods, shell-trapped or oval face windows, central status lights/buttons, armor/mech proportions, and consumer-electronics casing.
 
-For the production Character Bible, use only the accepted official base and these candidate fields. Reference order is mandatory:
+Imagev2 first renders a non-canonical full-body hero from this contract. It then renders one text-bearing Identity Board using that hero as exact identity input. The board can use an optional user-supplied editorial reference as a second, style-only input. It is the only user-facing identity artifact.
 
-1. official `references/canonical-base.png`, identity authority and sole image input
+After the user selects a board, Hatch receives only the locked `identity-hero.png` reference. Hatch creates the canonical base and all animation media. `identity-lock.json` records hero, board, copied Hatch reference, base hashes, and run location. There is no second post-selection Character Bible.
 
-The default `professional-editorial-v3` board system has three professional language sources: Swiss information design for hierarchy, industrial design review for structural proof, and museum collection documentation for concise evidence captions. It is a layout contract, not a visual reference image: derive colors, materials, contrast, and language mix from the canonical base and candidate; never impose a product-wide palette, material, typeface, or visual style. Its three evidence groups are behavioral proof (`before -> response -> resolve`), structural proof, and identity-preservation proof. Ask imagev2 to render the integrated text-bearing board. Never ask it to render private data, chart language, or raw reasoning; the renderer rejects a provider-unsafe prompt locally, and visual QA must still confirm legibility.
-
-Before selection, record a public Character Bible QA artifact for every candidate. It must match the exact canonical-base and board SHA-256 values and attest that identity is consistent, typography is readable, and the required information groups are complete. A missing, failed, or hash-mismatched QA artifact blocks the board from the selection manifest.
+Historical Character Bible contracts and three-Hatch candidate runs are legacy-only. Do not use them for a new session.

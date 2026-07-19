@@ -17,7 +17,10 @@ from session_contract import ProductSession
 _NEXT_ACTION = {
     "intake_ready": "compute_private_chart",
     "chart_ready": "compile_candidates",
-    "candidates_ready": "prepare_candidate_runs",
+    "candidates_ready": "render_identity_boards",
+    "identity_boards_ready": "select_identity_candidate",
+    "identity_selected": "prepare_selected_hatch_run",
+    "selected_hatch_ready": "generate_selected_hatch_base",
     "candidate_runs_ready": "generate_hatch_bases",
     "candidate_bases_ready": "render_character_bibles",
     "candidate_boards_ready": "select_candidate",
@@ -86,6 +89,18 @@ def session_status(session_root: Path) -> dict:
         if provenance:
             result["rendered_board_system"] = str(provenance.get("rendered_board_system", ""))
             result["current_runtime_board_system"] = str(provenance.get("current_runtime_board_system", ""))
+    identity_boards_path = session.root / "identity-boards.json"
+    if state == "identity_boards_ready" and identity_boards_path.is_file():
+        result["boards"] = [
+            {
+                "candidate_id": str(item["candidate_id"]),
+                "hero": str(item["hero"]),
+                "identity_board": str(item["identity_board"]),
+            }
+            for item in _load(identity_boards_path).get("boards", [])
+            if isinstance(item, dict)
+            and all(isinstance(item.get(key), str) for key in ("candidate_id", "hero", "identity_board"))
+        ]
     selection_path = session.root / "selection.json"
     if selection_path.is_file():
         selection = _load(selection_path)

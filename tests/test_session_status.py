@@ -21,7 +21,7 @@ def test_session_status_exposes_only_public_selection_information(tmp_path: Path
     result = session_status(session.root)
 
     assert result["state"] == "candidates_ready"
-    assert result["next_action"] == "prepare_candidate_runs"
+    assert result["next_action"] == "render_identity_boards"
     assert result["candidates"] == [{"candidate_id": "a", "display_name": "A"}, {"candidate_id": "b", "display_name": "B"}, {"candidate_id": "c", "display_name": "C"}]
     assert str(session.root / "private") not in json.dumps(result)
 

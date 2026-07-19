@@ -57,6 +57,19 @@ def build_hatch_handoff(candidate: dict[str, Any], *, candidate_id: str) -> dict
     materials = ", ".join(_safe_text(item) for item in candidate.get("material_tokens", []))
     silhouette = ", ".join(_safe_text(item) for item in candidate.get("silhouette_tokens", []))
     avoid = "; ".join(_safe_text(item) for item in candidate.get("anti_drift", []))
+    body_grammar = _safe_text(candidate.get("body_grammar") or "")
+    relationship_gesture = _safe_text(candidate.get("relationship_gesture") or "")
+    tactile_hook = _safe_text(candidate.get("tactile_hook") or "")
+    interaction = relationship_gesture or _safe_text(candidate.get("interaction_signature") or "")
+    identity_notes = " ".join(
+        part
+        for part in (
+            f"Body grammar: {body_grammar}." if body_grammar else "",
+            f"Interaction: {interaction}." if interaction else "",
+            f"Tactility: {tactile_hook}." if tactile_hook else "",
+        )
+        if part
+    )
 
     return {
         "pet_name": pet_name,
@@ -67,10 +80,38 @@ def build_hatch_handoff(candidate: dict[str, Any], *, candidate_id: str) -> dict
             f"{_safe_text(candidate.get('form_metaphor'))}. "
             f"Silhouette: {silhouette}. "
             f"Signature: {_safe_text(candidate.get('signature_hook'))}. "
-            f"Interaction: {_safe_text(candidate.get('interaction_signature'))}. "
+            f"{identity_notes} "
             f"Avoid: {avoid}."
         ),
         "style_notes": f"Palette: {palette}. Materials: {materials}. Keep the character compact and readable at pet size.",
+    }
+
+
+def build_identity_board_input(
+    candidate: dict[str, Any], *, design_reference_path: str | Path = ""
+) -> dict[str, Any]:
+    """Create the safe art-direction input for a non-canonical hero and Identity Board."""
+    try:
+        _validate_candidate(candidate)
+    except ValueError as error:
+        raise ValueError("unsafe identity board input") from error
+    required = ("body_grammar", "relationship_gesture", "tactile_hook", "default_form_avoids")
+    if any(not candidate.get(field) for field in required):
+        raise ValueError("candidate is missing its identity art-direction contract")
+    return {
+        "design_reference_path": str(Path(design_reference_path)) if str(design_reference_path).strip() else "",
+        "ip_name": _safe_text(candidate.get("ip_name")),
+        "display_name": _safe_text(candidate.get("display_name")),
+        "form_metaphor": _safe_text(candidate.get("form_metaphor")),
+        "body_grammar": _safe_text(candidate.get("body_grammar")),
+        "silhouette_tokens": [_safe_text(item) for item in candidate.get("silhouette_tokens", [])],
+        "relationship_gesture": _safe_text(candidate.get("relationship_gesture")),
+        "tactile_hook": _safe_text(candidate.get("tactile_hook")),
+        "palette_tokens": [_safe_text(item) for item in candidate.get("palette_tokens", [])],
+        "material_tokens": [_safe_text(item) for item in candidate.get("material_tokens", [])],
+        "signature_hook": _safe_text(candidate.get("signature_hook")),
+        "default_form_avoids": [_safe_text(item) for item in candidate.get("default_form_avoids", [])],
+        "anti_drift": [_safe_text(item) for item in candidate.get("anti_drift", [])],
     }
 
 

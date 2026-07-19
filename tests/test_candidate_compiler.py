@@ -98,6 +98,7 @@ def test_compiler_is_deterministic_and_uses_relative_visual_tokens(tmp_path: Pat
         assert all("palette" not in token.lower() for token in candidate["material_tokens"])
         assert "chart" not in candidate["interaction_signature"].lower()
         assert "astrolog" not in candidate["board_composition"].lower()
+        assert "hood" not in candidate["body_grammar"].lower()
 
 
 def test_compiler_rejects_an_invalid_or_incomplete_profile(tmp_path: Path):

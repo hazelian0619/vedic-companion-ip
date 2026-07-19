@@ -1,4 +1,4 @@
 interface:
   display_name: "Vedic Companion IP"
-  short_description: "Create safe companion choices from local chart facts."
-  default_prompt: "Use $vedic-companion-ip to turn local chart facts into three safe Hatch companion candidates."
+  short_description: "Choose an identity board before Hatch production."
+  default_prompt: "Use $vedic-companion-ip to make three safe companion Identity Boards from local chart facts; wait for my choice before one Hatch production run."

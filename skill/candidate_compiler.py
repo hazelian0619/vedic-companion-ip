@@ -49,6 +49,52 @@ _MATERIAL_RELATIONSHIPS = (
     ("matte wood composite outer shell", "felt face plane", "anodized aluminum detail"),
     ("woven textile outer shell", "porcelain face plane", "recycled resin join"),
 )
+_ART_DIRECTION = {
+    "shelter": {
+        "description": "A soft asymmetric companion that keeps a little pocket of calm open beside the user.",
+        "form_metaphor": "a small nested keepsake wrap that has learned to walk beside someone",
+        "body_grammar": "A low asymmetric cushion companion: a plump comma-shaped torso, one quilted side flap no taller than the body, two soft feet set at different heights, and a tiny flat stitched face directly on the body surface beside the seam, no larger than one third of the body height.",
+        "silhouette_tokens": ["low comma-shaped cushion torso", "one short quilted side flap", "two offset soft feet", "tiny flat stitched face on body surface"],
+        "relationship_gesture": "It scoots close, turns its wrap flap outward like a tiny invitation, and waits without asking to be picked up.",
+        "tactile_hook": "A pinchable plush edge and one line of raised blanket stitching invite a calming thumb rub.",
+        "signature_hook": "One ribbon-like pull tab is stitched into the outer shoulder seam, never placed at the body center.",
+        "interaction_signature": "It scoots close and opens its wrapped shoulder into a small quiet invitation.",
+        "board_composition": "Let the off-center shoulder flap create an asymmetrical reading path from hero to tactile seam details.",
+    },
+    "beacon": {
+        "description": "A tiny purposeful companion that makes the next gentle move feel visible without becoming an instrument or a person in costume.",
+        "form_metaphor": "a tiny felt courier with one little folded paper flag resting against its shoulder",
+        "body_grammar": "A low pear-shaped felt companion that leans gently forward, with one small folded paper flag attached behind one shoulder and never taller than the body, two springy feet, and a simple non-human stitched face directly on the body surface, no larger than one third of the body height.",
+        "silhouette_tokens": ["low pear-shaped felt body", "one small shoulder paper flag", "two springy feet", "small flat stitched face on body surface"],
+        "relationship_gesture": "It takes one hopeful half-step, tips its little shoulder flag toward the user, then settles back to leave the next move feeling small.",
+        "tactile_hook": "A soft pleated flag edge and a tiny stitched pull tab give the body an immediately hand-made feel.",
+        "signature_hook": "One tiny folded star pennant is stitched along the high shoulder seam, never centered on the chest.",
+        "interaction_signature": "It makes one hopeful half-step, tips its small shoulder flag toward the user, then settles back to make the next move feel small.",
+        "board_composition": "Use the small shoulder flag as a gentle off-center reading cue, then resolve through the stitched shoulder detail and tiny feet.",
+    },
+    "bridge": {
+        "description": "An uneven little tandem companion that makes room for two sides without splitting into two separate objects.",
+        "form_metaphor": "an uneven little tandem held together by a woven loop, made to make room for two sides",
+        "body_grammar": "An off-balance tandem companion: one taller rounded lobe and one smaller bean-like lobe joined by a visible woven loop, with a single small flat stitched face directly on the taller lobe's body surface, no larger than one third of the body height.",
+        "silhouette_tokens": ["uneven paired body", "one taller rounded lobe", "one smaller bean-like lobe", "visible woven joining loop", "small flat stitched face on body surface"],
+        "relationship_gesture": "The smaller half leans toward the larger one, then both turn slightly outward as though making space for the user to join them.",
+        "tactile_hook": "A braided fabric joining loop and contrasting nap across the two halves make the connection readable by touch.",
+        "signature_hook": "One visible woven loop joins the unequal halves off-center, never as a button or central light.",
+        "interaction_signature": "The smaller half leans in, then both halves turn outward to make room for the user.",
+        "board_composition": "Use a deliberately uneven paired composition that follows the woven loop from one half to the other.",
+    },
+}
+_DEFAULT_FORM_AVOIDS = [
+    "symmetric toy pod silhouette",
+    "face trapped inside a shell or an oval face window",
+    "central status light or center button",
+    "armor plating or heroic mech proportions",
+    "consumer electronics casing or appliance seams",
+    "human child face, realistic skin, or a costumed-person silhouette",
+    "face enclosed in a hood, helmet, cone, shell, or oval window",
+    "oversized blade, sail, or wing taller than the body",
+    "large separate face applique or dominant central face panel",
+]
 _DIRECTION_VARIANTS = {
     "shelter": (
         {
@@ -224,12 +270,23 @@ def _candidate(direction: str, rank: int, digest: str) -> dict[str, Any]:
     name = _NAME_PREFIX[int(digest[rank * 2:rank * 2 + 2], 16) % len(_NAME_PREFIX)]
     variant_index = int(hashlib.sha256(f"{direction}:{digest}".encode("utf-8")).hexdigest()[:8], 16) % len(_DIRECTION_VARIANTS[direction])
     definition = _DIRECTION_VARIANTS[direction][variant_index]
+    art_direction = _ART_DIRECTION[direction]
     palette_tokens, material_tokens = _visual_relationships(direction, digest)
     return {
         "candidate_id": f"{direction}-{digest[:6]}-{rank + 1}",
         "ip_name": f"{name} {direction.title()}",
         "display_name": f"{name} / {direction.title()}",
         **definition,
+        "description": art_direction["description"],
+        "form_metaphor": art_direction["form_metaphor"],
+        "silhouette_tokens": art_direction["silhouette_tokens"],
+        "body_grammar": art_direction["body_grammar"],
+        "relationship_gesture": art_direction["relationship_gesture"],
+        "tactile_hook": art_direction["tactile_hook"],
+        "signature_hook": art_direction["signature_hook"],
+        "interaction_signature": art_direction["interaction_signature"],
+        "board_composition": art_direction["board_composition"],
+        "default_form_avoids": list(_DEFAULT_FORM_AVOIDS),
         "palette_tokens": palette_tokens,
         "material_tokens": material_tokens,
         "anti_drift": [
@@ -238,6 +295,7 @@ def _candidate(direction: str, rank: int, digest: str) -> dict[str, Any]:
             "no scenery",
             "no detached effects",
             "keep the companion compact and emotionally present",
+            *_DEFAULT_FORM_AVOIDS,
             *definition["anti_drift"],
         ],
     }

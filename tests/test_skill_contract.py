@@ -27,14 +27,19 @@ def _safe_candidate(candidate_id: str) -> dict[str, object]:
     }
 
 
-def test_skill_declares_official_hatch_then_imagev2_sequence():
+def test_skill_declares_board_first_then_selected_hatch_sequence():
     text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8").lower()
     assert "hatch-pet" in text
     assert "imagev2" in text
-    assert "three official hatch-pet canonical bases -> three imagev2 character bibles" in text
+    assert "3 non-canonical imagev2 heroes -> 3 text-bearing imagev2 identity boards" in text
+    assert "user chooses one board -> 1 official hatch-pet canonical base" in text
+    assert "no second post-selection character bible" in text
     assert "legacy budget-preview path only" in text
     assert "only the selected candidate" in text
     assert "python3 \"$skill_dir/scripts/prepare_product_session.py\"" in text
+    assert "scripts/render_identity_board_cli.py" in text
+    assert "scripts/select_identity_candidate.py" in text
+    assert "scripts/record_selected_base.py" in text
     assert "scripts/selected_hatch_run.py" in text
 
 
@@ -111,6 +116,8 @@ def test_preparer_rejects_private_or_chart_content(tmp_path: Path):
 def test_skill_bundles_the_selected_branch_runners_and_their_local_modules():
     required = (
         "candidate_compiler.py",
+        "candidate_handoff.py",
+        "identity_board.py",
         "session_contract.py",
         "scripts/prepare_product_session.py",
         "scripts/prepare_candidate_runs.py",
@@ -126,12 +133,16 @@ def test_skill_bundles_the_selected_branch_runners_and_their_local_modules():
         "scripts/record_visual_qa.py",
         "scripts/install_selected_pet.py",
         "scripts/session_status.py",
+        "scripts/render_identity_board_cli.py",
+        "scripts/record_identity_board_qa.py",
+        "scripts/record_identity_boards.py",
+        "scripts/select_identity_candidate.py",
+        "scripts/record_selected_base.py",
         "scripts/verify_delivery.py",
         "scripts/select_candidate.py",
         "scripts/render_design_branch.py",
         "scripts/prepare_selected_hatch_run.py",
         "scripts/render_character_bible.py",
-        "candidate_handoff.py",
         "character_bible.py",
         "companion_ip_contract.py",
         "imagev2.py",
@@ -152,6 +163,11 @@ def test_skill_bundles_the_selected_branch_runners_and_their_local_modules():
         "record_visual_qa.py",
         "install_selected_pet.py",
         "session_status.py",
+        "render_identity_board_cli.py",
+        "record_identity_board_qa.py",
+        "record_identity_boards.py",
+        "select_identity_candidate.py",
+        "record_selected_base.py",
     ):
         result = subprocess.run(
             [sys.executable, str(SKILL_DIR / "scripts" / script), "--help"],
@@ -159,3 +175,19 @@ def test_skill_bundles_the_selected_branch_runners_and_their_local_modules():
             text=True,
         )
         assert result.returncode == 0, result.stderr
+
+    for relative_path in (
+        "candidate_compiler.py",
+        "candidate_handoff.py",
+        "identity_board.py",
+        "session_contract.py",
+        "scripts/prepare_selected_hatch_run.py",
+        "scripts/selected_hatch_run.py",
+        "scripts/session_status.py",
+        "scripts/render_identity_board_cli.py",
+        "scripts/record_identity_board_qa.py",
+        "scripts/record_identity_boards.py",
+        "scripts/select_identity_candidate.py",
+        "scripts/record_selected_base.py",
+    ):
+        assert (ROOT / relative_path).read_bytes() == (SKILL_DIR / relative_path).read_bytes(), relative_path
