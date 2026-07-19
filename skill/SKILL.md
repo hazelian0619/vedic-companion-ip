@@ -23,6 +23,11 @@ Accept only the schema in [character-bible-contract.md](references/character-bib
 
 Credentials are process-only environment variables. Do not write them to `.env`, source code, manifests, prompts, reports, shell history, or generated images.
 
+Treat the session directory as the only orchestration boundary. Do not hand-write
+`candidate-runs.json`, `candidate-bases.json`, `candidate-boards.json`, or
+`selection.json`: the bundled commands create each artifact, hash it, and move
+the session through its next permitted state.
+
 ## Candidate Stage
 
 Set the installed Skill directory once for all bundled runners:
@@ -41,12 +46,11 @@ python3 "$SKILL_DIR/scripts/prepare_product_session.py" \
 ```
 
 3. Each stable identity decision needs independent local evidence, but evidence and rationale remain private.
-4. Prepare isolated official hatch runs without generating images:
+4. Prepare exactly three official Hatch runs inside that session without generating images:
 
 ```bash
 python3 "$SKILL_DIR/scripts/prepare_candidate_runs.py" \
-  --candidates /absolute/path/to/safe-candidates.json \
-  --output-dir /absolute/path/to/candidate-runs
+  --session-dir /absolute/path/to/session
 ```
 
 5. For each candidate, use the installed official `hatch-pet` workflow to generate and visually accept its canonical base before any imagev2 board. Its `pet_request.json`, base prompt, and state geometry define the animatable character boundary.
@@ -61,17 +65,31 @@ When the user supplies an OpenAI-compatible image provider, they configure its k
 
 ```bash
 python3 "$SKILL_DIR/scripts/hatch_base_cli.py" \
-  --run-dir /absolute/path/to/candidate/hatch-pet-run \
+  --run-dir /absolute/path/to/session/candidate-runs/<candidate-id>/hatch-pet-run \
   --api-key-env "<user-configured-key-variable>" \
   --image-base-url "https://provider.example/v1"
 ```
+
+After all three bases have been generated and visually accepted, record exactly
+those session-owned official bases. This is the required handoff from Hatch base
+generation to Character Bible rendering:
+
+```bash
+python3 "$SKILL_DIR/scripts/record_candidate_bases.py" \
+  --session-dir /absolute/path/to/session \
+  --base "<candidate-a>=/absolute/path/to/session/candidate-runs/<candidate-a>/hatch-pet-run/references/canonical-base.png" \
+  --base "<candidate-b>=/absolute/path/to/session/candidate-runs/<candidate-b>/hatch-pet-run/references/canonical-base.png" \
+  --base "<candidate-c>=/absolute/path/to/session/candidate-runs/<candidate-c>/hatch-pet-run/references/canonical-base.png" \
+  --reviewer "<human-or-visual-qa-agent>" \
+  --note "<specific identity and animation-readiness verdict>"
+```
+
 6. Render one text-bearing imagev2 Character Bible from each accepted official base. The official base is the only image input and the only identity authority. The default `professional-editorial-v2` board system is a character-free, source-traceable layout contract: International Typographic Style grid hierarchy, museum collection-documentation captions, and production character-bible evidence views. It does not impose a fixed palette, material, typeface, or character.
 
 ```bash
 python3 "$SKILL_DIR/scripts/render_character_bible_cli.py" \
-  --candidates /absolute/path/to/safe-candidates.json \
+  --session-dir /absolute/path/to/session \
   --candidate-id "<candidate-id>" \
-  --official-base /absolute/path/to/candidate-runs/<candidate-id>/hatch-pet-run/references/canonical-base.png \
   --out /absolute/path/to/session/candidates/<candidate-id>/character-bible.png \
   --api-key-env "<user-configured-key-variable>" \
   --image-base-url "https://provider.example/v1"
@@ -156,6 +174,7 @@ Keep `pet.json`, `spritesheet.webp`, validation JSON, contact sheet, all preview
 ## Failure Rules
 
 - No official base: do not render a Character Bible.
+- A base outside its recorded Hatch run, or one whose base job is incomplete: do not record it or render from it.
 - Identity drift in a Character Bible: regenerate the board with the official base; never change the base to fit the board.
 - Identity drift in an animation row: repair only that row using the canonical base.
 - No user selection: stop after the three candidate boards. Do not produce three full atlases.
@@ -164,6 +183,7 @@ Keep `pet.json`, `spritesheet.webp`, validation JSON, contact sheet, all preview
 ## Resources
 
 - `scripts/prepare_candidate_runs.py`: validates three safe candidates and scaffolds three official hatch-pet seed runs without generating images.
+- `scripts/record_candidate_bases.py`: accepts exactly the three completed, session-owned official canonical bases before Character Bible rendering.
 - `scripts/prepare_product_session.py`: creates private chart artifacts, a private evidence ledger, and three public visual-safe candidates.
 - `scripts/compute_chart_report.py`: local PyJHora/Swiss Ephemeris computation used by the product-session entry; requires the configured `VEDIC_PY` runtime.
 - `scripts/imagegen_preflight.py`: redaction-safe configuration check for the official imagegen CLI fallback.

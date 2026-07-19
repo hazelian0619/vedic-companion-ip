@@ -10,6 +10,8 @@ from session_contract import ProductSession
 
 def _bases_ready_session(tmp_path: Path) -> ProductSession:
     session = ProductSession.create(tmp_path / "run")
+    chart = session.write_public("chart-ready.json", {})
+    session.transition("chart_ready", artifact_paths=[chart], decision="computed")
     candidates = session.write_public(
         "safe-candidates.json",
         {"candidates": [{"candidate_id": value} for value in ("a", "b", "c")]},

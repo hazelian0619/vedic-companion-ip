@@ -15,6 +15,8 @@ def _sha256(path: Path) -> str:
 
 def _ready_selected_session(tmp_path: Path) -> ProductSession:
     session = ProductSession.create(tmp_path / "session")
+    chart = session.write_public("chart-ready.json", {})
+    session.transition("chart_ready", artifact_paths=[chart], decision="computed")
     candidates = session.write_public("safe-candidates.json", {"candidates": [{"candidate_id": "a"}]})
     session.transition("candidates_ready", artifact_paths=[candidates], decision="fixture")
     run = session.root / "candidate-runs" / "a" / "hatch-pet-run"

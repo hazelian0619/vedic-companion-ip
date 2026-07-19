@@ -18,6 +18,20 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _recorded_pair(session: ProductSession, candidate_id: str, base: Path, board: Path) -> None:
+    records = json.loads((session.root / "candidate-boards.json").read_text(encoding="utf-8")).get("boards", [])
+    record = next((item for item in records if item.get("candidate_id") == candidate_id), None)
+    if not isinstance(record, dict):
+        raise ValueError("selected candidate has no recorded base and board pair")
+    if (
+        record.get("canonical_base") != str(base.relative_to(session.root))
+        or record.get("character_bible") != str(board.relative_to(session.root))
+        or record.get("base_sha256") != _sha256(base)
+        or record.get("board_sha256") != _sha256(board)
+    ):
+        raise ValueError("selected files do not match the recorded candidate pair")
+
+
 def select_candidate(session_root: Path, candidate_id: str, base_path: Path, board_path: Path, *, decision: str) -> Path:
     session = ProductSession.create(Path(session_root))
     manifest = json.loads((session.root / "session.json").read_text(encoding="utf-8"))
@@ -31,6 +45,7 @@ def select_candidate(session_root: Path, candidate_id: str, base_path: Path, boa
     for artifact in (base, board):
         if not artifact.is_file() or session.root not in artifact.parents:
             raise ValueError("selected artifact is missing or outside the session")
+    _recorded_pair(session, candidate_id, base, board)
     selection = session.write_public(
         "selection.json",
         {

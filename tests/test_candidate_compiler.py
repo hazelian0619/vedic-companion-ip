@@ -5,6 +5,7 @@ from pathlib import Path
 
 from candidate_compiler import compile_candidates
 from companion_ip_contract import astrology_term_scan, privacy_scan
+from session_contract import ProductSession
 
 
 def profile_payload() -> dict:
@@ -33,9 +34,17 @@ def profile_payload() -> dict:
     }
 
 
+def _chart_ready_session(root: Path) -> ProductSession:
+    session = ProductSession.create(root)
+    chart = session.write_public("chart-ready.json", {})
+    session.transition("chart_ready", artifact_paths=[chart], decision="computed")
+    return session
+
+
 def test_compiler_emits_three_visual_safe_candidates_and_private_evidence(tmp_path: Path):
     profile = tmp_path / "pet-profile.json"
     profile.write_text(json.dumps(profile_payload()), encoding="utf-8")
+    _chart_ready_session(tmp_path / "session")
 
     result = compile_candidates(profile, tmp_path / "session")
 
@@ -54,6 +63,8 @@ def test_compiler_emits_three_visual_safe_candidates_and_private_evidence(tmp_pa
 def test_compiler_is_deterministic_and_uses_relative_visual_tokens(tmp_path: Path):
     profile = tmp_path / "pet-profile.json"
     profile.write_text(json.dumps(profile_payload()), encoding="utf-8")
+    _chart_ready_session(tmp_path / "first")
+    _chart_ready_session(tmp_path / "second")
 
     first = compile_candidates(profile, tmp_path / "first")
     second = compile_candidates(profile, tmp_path / "second")

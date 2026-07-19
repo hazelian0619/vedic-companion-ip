@@ -20,13 +20,27 @@ def test_session_keeps_private_ledger_owner_only_and_public_manifest_safe(tmp_pa
 
 def test_session_records_hashed_state_transitions(tmp_path: Path):
     session = ProductSession.create(tmp_path / "run")
+    chart = session.write_public("chart-ready.json", {})
+    session.transition("chart_ready", artifact_paths=[chart], decision="computed")
     artifact = session.write_public("safe-candidates.json", {"candidates": []})
 
     session.transition("candidates_ready", artifact_paths=[artifact], decision="compiled")
 
     manifest = json.loads((tmp_path / "run" / "session.json").read_text(encoding="utf-8"))
     assert manifest["state"] == "candidates_ready"
-    assert manifest["events"][0]["artifact_hashes"]["safe-candidates.json"]
+    assert manifest["events"][-1]["artifact_hashes"]["safe-candidates.json"]
+
+
+def test_session_rejects_a_transition_that_skips_required_stages(tmp_path: Path):
+    session = ProductSession.create(tmp_path / "run")
+    artifact = session.write_public("safe-candidates.json", {"candidates": []})
+
+    try:
+        session.transition("candidates_ready", artifact_paths=[artifact], decision="skipped chart")
+    except ValueError as error:
+        assert "allowed" in str(error)
+    else:
+        raise AssertionError("state transitions must not skip required stages")
 
 
 def test_session_records_a_hashed_public_audit_event_without_changing_state(tmp_path: Path):
@@ -43,6 +57,8 @@ def test_session_records_a_hashed_public_audit_event_without_changing_state(tmp_
 
 def test_session_can_record_prepared_candidate_runs_before_any_base_exists(tmp_path: Path):
     session = ProductSession.create(tmp_path / "run")
+    chart = session.write_public("chart-ready.json", {})
+    session.transition("chart_ready", artifact_paths=[chart], decision="computed")
     candidates = session.write_public("safe-candidates.json", {"candidates": []})
     session.transition("candidates_ready", artifact_paths=[candidates], decision="compiled")
     runs = session.write_public("candidate-runs.json", {"candidates": []})

@@ -44,6 +44,20 @@ def _candidates(session: ProductSession) -> list[dict[str, str]]:
     ]
 
 
+def _matching_board_provenance(session: ProductSession, board_hash: str) -> dict | None:
+    legacy = session.root / "candidate-board-provenance.json"
+    candidates = [legacy] if legacy.is_file() else []
+    provenance_dir = session.root / "candidate-board-provenance"
+    if provenance_dir.is_dir():
+        candidates.extend(sorted(provenance_dir.glob("*.json")))
+    matches = []
+    for path in candidates:
+        payload = _load(path)
+        if payload.get("candidate_boards_sha256") == board_hash:
+            matches.append(payload)
+    return matches[-1] if matches else None
+
+
 def session_status(session_root: Path) -> dict:
     session = ProductSession.create(Path(session_root))
     manifest = _load(session.root / "session.json")
@@ -68,13 +82,10 @@ def session_status(session_root: Path) -> dict:
             if isinstance(item, dict)
             and all(isinstance(item.get(key), str) for key in ("candidate_id", "canonical_base", "character_bible"))
         ]
-        provenance_path = session.root / "candidate-board-provenance.json"
-        if provenance_path.is_file():
-            provenance = _load(provenance_path)
-            board_hash = hashlib.sha256(boards_path.read_bytes()).hexdigest()
-            if provenance.get("candidate_boards_sha256") == board_hash:
-                result["rendered_board_system"] = str(provenance.get("rendered_board_system", ""))
-                result["current_runtime_board_system"] = str(provenance.get("current_runtime_board_system", ""))
+        provenance = _matching_board_provenance(session, hashlib.sha256(boards_path.read_bytes()).hexdigest())
+        if provenance:
+            result["rendered_board_system"] = str(provenance.get("rendered_board_system", ""))
+            result["current_runtime_board_system"] = str(provenance.get("current_runtime_board_system", ""))
     selection_path = session.root / "selection.json"
     if selection_path.is_file():
         selection = _load(selection_path)

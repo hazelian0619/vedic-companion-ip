@@ -31,6 +31,13 @@ def verify_delivery(run_dir: Path, *, install_dir: Optional[Path] = None) -> dic
                 missing.append("final/validation.json (ok must be true)")
         except json.JSONDecodeError:
             missing.append("final/validation.json (invalid JSON)")
+    frame_review = run / "qa" / "review.json"
+    if frame_review.is_file():
+        try:
+            if json.loads(frame_review.read_text(encoding="utf-8")).get("ok") is not True:
+                missing.append("qa/review.json (ok must be true)")
+        except json.JSONDecodeError:
+            missing.append("qa/review.json (invalid JSON)")
     visual_qa = run / "qa" / "visual-qa.json"
     if not visual_qa.is_file():
         missing.append("qa/visual-qa.json (ok must be true)")

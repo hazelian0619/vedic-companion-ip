@@ -25,6 +25,20 @@ _STATES = (
     "installed",
 )
 
+_ALLOWED_TRANSITIONS = {
+    "intake_ready": frozenset({"chart_ready"}),
+    "chart_ready": frozenset({"candidates_ready"}),
+    "candidates_ready": frozenset({"candidate_runs_ready"}),
+    "candidate_runs_ready": frozenset({"candidate_bases_ready"}),
+    "candidate_bases_ready": frozenset({"candidate_boards_ready"}),
+    "candidate_boards_ready": frozenset({"candidate_selected"}),
+    "candidate_selected": frozenset({"base_accepted", "animation_ready"}),
+    "base_accepted": frozenset({"animation_ready"}),
+    "animation_ready": frozenset({"package_validated"}),
+    "package_validated": frozenset({"installed"}),
+    "installed": frozenset(),
+}
+
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -98,8 +112,8 @@ class ProductSession:
         manifest_path = self.root / "session.json"
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         current = str(manifest["state"])
-        if _STATES.index(state) <= _STATES.index(current):
-            raise ValueError(f"session state cannot move from {current} to {state}")
+        if state not in _ALLOWED_TRANSITIONS[current]:
+            raise ValueError(f"session transition from {current} to {state} is not allowed")
         hashes = self._artifact_hashes(artifact_paths)
         manifest["state"] = state
         manifest["events"].append(

@@ -9,6 +9,8 @@ from session_contract import ProductSession
 
 def test_session_status_exposes_only_public_selection_information(tmp_path: Path):
     session = ProductSession.create(tmp_path / "run")
+    chart = session.write_public("chart-ready.json", {})
+    session.transition("chart_ready", artifact_paths=[chart], decision="computed")
     candidates = session.write_public(
         "safe-candidates.json",
         {"candidates": [{"candidate_id": "a", "display_name": "A"}, {"candidate_id": "b", "display_name": "B"}, {"candidate_id": "c", "display_name": "C"}]},
@@ -26,6 +28,8 @@ def test_session_status_exposes_only_public_selection_information(tmp_path: Path
 
 def test_session_status_exposes_board_choices_only_after_all_boards_are_ready(tmp_path: Path):
     session = ProductSession.create(tmp_path / "run")
+    chart = session.write_public("chart-ready.json", {})
+    session.transition("chart_ready", artifact_paths=[chart], decision="computed")
     candidates = session.write_public("safe-candidates.json", {"candidates": [{"candidate_id": "a", "display_name": "A"}]})
     session.transition("candidates_ready", artifact_paths=[candidates], decision="fixture")
     runs = session.write_public("candidate-runs.json", {"candidates": []})
@@ -44,6 +48,8 @@ def test_session_status_exposes_board_choices_only_after_all_boards_are_ready(tm
 
 def test_session_status_prefers_a_matching_public_board_provenance_correction(tmp_path: Path):
     session = ProductSession.create(tmp_path / "run")
+    chart = session.write_public("chart-ready.json", {})
+    session.transition("chart_ready", artifact_paths=[chart], decision="computed")
     candidates = session.write_public("safe-candidates.json", {"candidates": []})
     session.transition("candidates_ready", artifact_paths=[candidates], decision="fixture")
     runs = session.write_public("candidate-runs.json", {"candidates": []})

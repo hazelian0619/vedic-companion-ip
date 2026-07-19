@@ -5,7 +5,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import secrets
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -39,8 +41,9 @@ def record_board_provenance(
     boards_manifest = session.root / "candidate-boards.json"
     if not boards_manifest.is_file():
         raise ValueError("candidate board manifest is missing")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     correction = session.write_public(
-        "candidate-board-provenance.json",
+        f"candidate-board-provenance/{timestamp}-{secrets.token_hex(4)}.json",
         {
             "candidate_boards_sha256": _sha256(boards_manifest),
             "rendered_board_system": _text(rendered_board_system, "rendered_board_system"),

@@ -16,16 +16,39 @@ sys.path.insert(0, str(ROOT))
 
 from candidate_handoff import build_board_input
 from character_bible import build_render_request
+from session_contract import ProductSession
 
 
 IMAGE_GEN = Path.home() / ".codex" / "skills" / ".system" / "imagegen" / "scripts" / "image_gen.py"
 
 
-def _candidate(path: Path, candidate_id: str) -> dict:
-    for candidate in json.loads(path.read_text(encoding="utf-8")).get("candidates", []):
+def _accepted_candidate_and_base(session: ProductSession, candidate_id: str) -> tuple[dict, Path]:
+    manifest = json.loads((session.root / "session.json").read_text(encoding="utf-8"))
+    if manifest.get("state") != "candidate_bases_ready":
+        raise ValueError("Character Bible rendering requires recorded canonical bases")
+    for candidate in json.loads((session.root / "safe-candidates.json").read_text(encoding="utf-8")).get("candidates", []):
         if candidate.get("candidate_id") == candidate_id:
-            return candidate
-    raise ValueError(f"candidate not found: {candidate_id}")
+            break
+    else:
+        raise ValueError(f"candidate not found: {candidate_id}")
+    for record in json.loads((session.root / "candidate-bases.json").read_text(encoding="utf-8")).get("bases", []):
+        if record.get("candidate_id") != candidate_id:
+            continue
+        base = (session.root / str(record.get("canonical_base", ""))).resolve()
+        if not base.is_file() or session.root not in base.parents:
+            break
+        if record.get("base_sha256") != _sha256(base):
+            break
+        return candidate, base
+    raise ValueError("candidate does not have an accepted canonical base")
+
+
+def _expected_board_path(session: ProductSession, candidate_id: str, out_path: Path) -> Path:
+    expected = (session.root / "candidates" / candidate_id / "character-bible.png").resolve()
+    out_path = Path(out_path).resolve()
+    if out_path != expected:
+        raise ValueError("Character Bible output must use its candidate session path")
+    return out_path
 
 
 def _sha256(path: Path) -> str:
@@ -33,27 +56,24 @@ def _sha256(path: Path) -> str:
 
 
 def render_character_bible_cli(
-    candidates_path: Path,
+    session_root: Path,
     candidate_id: str,
-    official_base: Path,
     out_path: Path,
     *,
     api_key_env: str,
     image_base_url: Optional[str],
     board_system: str = "professional-editorial-v2",
 ) -> Path:
+    session = ProductSession.create(Path(session_root))
+    candidate, official_base = _accepted_candidate_and_base(session, candidate_id)
+    out_path = _expected_board_path(session, candidate_id, out_path)
     if not IMAGE_GEN.is_file():
         raise RuntimeError(f"official imagegen CLI not found: {IMAGE_GEN}")
     key = os.environ.get(api_key_env)
     if not key:
         raise RuntimeError(f"image provider key is not configured in {api_key_env}")
-    candidates_path = Path(candidates_path).resolve()
-    official_base = Path(official_base).resolve()
-    out_path = Path(out_path).resolve()
-    if not candidates_path.is_file() or not official_base.is_file():
-        raise ValueError("candidate manifest and official base must exist")
     board_input = build_board_input(
-        _candidate(candidates_path, candidate_id),
+        candidate,
         official_base_path=official_base,
         board_system=board_system,
     )
@@ -112,9 +132,8 @@ def render_character_bible_cli(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--candidates", required=True, type=Path)
+    parser.add_argument("--session-dir", required=True, type=Path)
     parser.add_argument("--candidate-id", required=True)
-    parser.add_argument("--official-base", required=True, type=Path)
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--api-key-env", default="OPENAI_API_KEY")
     parser.add_argument("--image-base-url")
@@ -123,9 +142,8 @@ def main() -> int:
     try:
         print(
             render_character_bible_cli(
-                args.candidates,
+                args.session_dir,
                 args.candidate_id,
-                args.official_base,
                 args.out,
                 api_key_env=args.api_key_env,
                 image_base_url=args.image_base_url,

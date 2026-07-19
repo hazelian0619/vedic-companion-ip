@@ -39,6 +39,22 @@ def _base_for_candidate(session: ProductSession, candidate_id: str) -> Path:
     return base
 
 
+def _validated_renderer_provenance(session: ProductSession, candidate_id: str, board: Path, base: Path) -> None:
+    provenance_path = board.with_suffix(".json")
+    if not provenance_path.is_file() or session.root not in provenance_path.parents:
+        raise ValueError("Character Bible renderer provenance is missing or outside the session")
+    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    if (
+        provenance.get("candidate_id") != candidate_id
+        or provenance.get("reference_paths") != [str(base)]
+        or provenance.get("official_base_sha256") != _sha256(base)
+        or provenance.get("character_bible_sha256") != _sha256(board)
+        or provenance.get("renderer") != "official-imagegen-cli-edit"
+        or not isinstance(provenance.get("board_system"), str)
+    ):
+        raise ValueError("Character Bible renderer provenance does not match the accepted base and board")
+
+
 def record_character_bible_qa(
     session_root: Path,
     *,
@@ -58,6 +74,7 @@ def record_character_bible_qa(
     board = Path(board).resolve()
     if not board.is_file() or session.root not in board.parents:
         raise ValueError("Character Bible board is missing or outside the session")
+    _validated_renderer_provenance(session, candidate_id, board, base)
     checks = {
         "identity_consistent": bool(identity_consistent),
         "typography_acceptable": bool(typography_acceptable),

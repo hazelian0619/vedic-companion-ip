@@ -6,6 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from session_contract import ProductSession
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILL_DIR = ROOT / "skill"
@@ -38,36 +39,68 @@ def test_skill_declares_official_hatch_then_imagev2_sequence():
 
 
 def test_preparer_creates_three_official_runs_without_generating_images(tmp_path: Path):
-    candidates = tmp_path / "safe-candidates.json"
-    candidates.write_text(
-        json.dumps({"candidates": [_safe_candidate("a"), _safe_candidate("b"), _safe_candidate("c")]}, indent=2),
+    session = ProductSession.create(tmp_path / "session")
+    chart = session.write_public("chart-ready.json", {})
+    session.transition("chart_ready", artifact_paths=[chart], decision="fixture")
+    candidates = session.write_public(
+        "safe-candidates.json",
+        {"candidates": [_safe_candidate("a"), _safe_candidate("b"), _safe_candidate("c")]},
+    )
+    session.transition("candidates_ready", artifact_paths=[candidates], decision="fixture")
+    hatch_pet_dir = tmp_path / "hatch-pet"
+    helper = hatch_pet_dir / "scripts" / "prepare_pet_run.py"
+    helper.parent.mkdir(parents=True)
+    helper.write_text(
+        "import argparse\n"
+        "import json\n"
+        "from pathlib import Path\n"
+        "parser = argparse.ArgumentParser()\n"
+        "parser.add_argument('--output-dir', type=Path, required=True)\n"
+        "parser.add_argument('--pet-id', required=True)\n"
+        "parser.add_argument('--pet-name')\n"
+        "parser.add_argument('--display-name')\n"
+        "parser.add_argument('--description')\n"
+        "parser.add_argument('--pet-notes')\n"
+        "parser.add_argument('--style-notes')\n"
+        "parser.add_argument('--force', action='store_true')\n"
+        "args = parser.parse_args()\n"
+        "args.output_dir.mkdir(parents=True)\n"
+        "(args.output_dir / 'imagegen-jobs.json').write_text(json.dumps({'jobs': [{'id': 'base', 'status': 'pending'}]}))\n"
+        "(args.output_dir / 'pet_request.json').write_text(json.dumps({'pet_id': args.pet_id}))\n",
         encoding="utf-8",
     )
-    output_dir = tmp_path / "runs"
     script = SKILL_DIR / "scripts" / "prepare_candidate_runs.py"
     result = subprocess.run(
-        [sys.executable, str(script), "--candidates", str(candidates), "--output-dir", str(output_dir)],
+        [sys.executable, str(script), "--session-dir", str(session.root), "--hatch-pet-dir", str(hatch_pet_dir)],
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0, result.stderr
 
-    manifest = json.loads((output_dir / "candidate-runs.json").read_text(encoding="utf-8"))
+    manifest = json.loads((session.root / "candidate-runs.json").read_text(encoding="utf-8"))
     assert [item["candidate_id"] for item in manifest["candidates"]] == ["a", "b", "c"]
     for item in manifest["candidates"]:
-        run_dir = Path(item["hatch_run_dir"])
+        run_dir = session.root / item["hatch_run_dir"]
         jobs = json.loads((run_dir / "imagegen-jobs.json").read_text(encoding="utf-8"))
         assert any(job["id"] == "base" and job["status"] != "complete" for job in jobs["jobs"])
         assert not (run_dir / "decoded" / "base.png").exists()
+    assert json.loads((session.root / "session.json").read_text(encoding="utf-8"))["state"] == "candidate_runs_ready"
 
 
 def test_preparer_rejects_private_or_chart_content(tmp_path: Path):
-    candidates = tmp_path / "unsafe-candidates.json"
+    session = ProductSession.create(tmp_path / "session")
+    chart = session.write_public("chart-ready.json", {})
+    session.transition("chart_ready", artifact_paths=[chart], decision="fixture")
     candidate = _safe_candidate("unsafe")
     candidate["birth_date"] = "1990-01-01"
-    candidates.write_text(json.dumps({"candidates": [candidate]}), encoding="utf-8")
+    candidates = session.write_public("safe-candidates.json", {"candidates": [candidate]})
+    session.transition("candidates_ready", artifact_paths=[candidates], decision="fixture")
+    hatch_pet_dir = tmp_path / "hatch-pet"
+    helper = hatch_pet_dir / "scripts" / "prepare_pet_run.py"
+    helper.parent.mkdir(parents=True)
+    helper.write_text("", encoding="utf-8")
     result = subprocess.run(
-        [sys.executable, str(SKILL_DIR / "scripts" / "prepare_candidate_runs.py"), "--candidates", str(candidates), "--output-dir", str(tmp_path / "runs")],
+        [sys.executable, str(SKILL_DIR / "scripts" / "prepare_candidate_runs.py"), "--session-dir", str(session.root), "--hatch-pet-dir", str(hatch_pet_dir)],
         capture_output=True,
         text=True,
     )
@@ -80,11 +113,13 @@ def test_skill_bundles_the_selected_branch_runners_and_their_local_modules():
         "candidate_compiler.py",
         "session_contract.py",
         "scripts/prepare_product_session.py",
+        "scripts/prepare_candidate_runs.py",
         "scripts/compute_chart_report.py",
         "scripts/imagegen_preflight.py",
         "scripts/hatch_base_cli.py",
         "scripts/render_character_bible_cli.py",
         "scripts/record_character_bible_qa.py",
+        "scripts/record_candidate_bases.py",
         "scripts/record_candidate_boards.py",
         "scripts/record_board_provenance.py",
         "scripts/selected_hatch_run.py",
@@ -110,6 +145,7 @@ def test_skill_bundles_the_selected_branch_runners_and_their_local_modules():
         "render_character_bible.py",
         "render_character_bible_cli.py",
         "record_character_bible_qa.py",
+        "record_candidate_bases.py",
         "record_candidate_boards.py",
         "record_board_provenance.py",
         "selected_hatch_run.py",
