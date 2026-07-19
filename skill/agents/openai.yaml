@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vedic Companion IP"
+  short_description: "Turn private chart facts into safe companion-pet candidate runs."
+  default_prompt: "Create three design-safe companion pet candidates, then prepare official hatch-pet runs."

@@ -1,0 +1,26 @@
+# All product sessions can contain personal inputs, chart facts, provider
+# output, or generated artwork. They are local-only and never source assets.
+artifacts/
+fixtures/
+reports/
+docs/
+references/
+
+# Historical prototype entrypoints are intentionally not part of the portable
+# production Skill.
+/SKILL.md
+/appeal_dna.py
+/build_design_board.py
+/build_dna_doc.py
+/concept_translate.py
+/llm_or_codex.py
+/run.py
+/scripts/build_dna_doc.py
+/scripts/make_layout_guide.py
+
+*.env
+*.env
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.DS_Store
