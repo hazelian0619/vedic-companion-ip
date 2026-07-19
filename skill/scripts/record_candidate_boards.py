@@ -90,7 +90,7 @@ def main() -> int:
     parser.add_argument("--session-dir", required=True, type=Path)
     parser.add_argument("--board", required=True, action="append", type=_board_argument)
     parser.add_argument("--qa", required=True, action="append", type=_board_argument)
-    parser.add_argument("--board-system", default="professional-editorial-v2")
+    parser.add_argument("--board-system", default="professional-editorial-v3")
     args = parser.parse_args()
     try:
         print(record_candidate_boards(args.session_dir, dict(args.board), dict(args.qa), board_system=args.board_system))

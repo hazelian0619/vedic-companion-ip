@@ -36,6 +36,7 @@ _BRANCH_REQUIRED_FIELDS = frozenset(
         "anti_drift",
     }
 )
+_PROVIDER_SAFE_PROMPT_CHARS = 3800
 
 
 def _joined(values: list[str]) -> str:
@@ -60,25 +61,26 @@ def build_visual_board_prompt(board_input: dict[str, Any]) -> str:
     _validate_board_input(board_input)
     if board_input.get("board_system"):
         system_prompt = resolve_board_system(str(board_input["board_system"]))["prompt"]
-        type_direction = "Derive type contrast, copy color, divider treatment, and language mix from the official base and candidate; retain the chosen professional board system's hierarchy."
-        arrangement_direction = "Arrange the required evidence using the selected professional board system; adapt section count, placement, rule treatment, and emphasis to this character."
+        arrangement_direction = "Use the selected system, adapting section count, placement, rule treatment, and emphasis to this character."
     else:
         system_prompt = "Use input image 2 only as the user-approved editorial board-system reference. Derive the palette, background treatment, typography hierarchy, border language, information density, and panel rhythm from it; do not copy its character."
-        type_direction = "Derive type contrast, copy color, divider treatment, and language mix from input image 2."
         arrangement_direction = "Arrange the required evidence according to input image 2's information architecture."
-    return f"""Use case: stylized-concept
-Asset type: finished premium Character Bible, an information-rich but not crowded 1:1 collectible-character specification board.
-Input image 1: official canonical base. Preserve this exact pet identity in every view. Do not redesign its species, silhouette, face, palette relationship, materials, or signature object.
+    prompt = f"""Use case: stylized-concept
+Asset type: finished 1:1 Character Bible with integrated legible typography.
+Input image 1: official canonical base. Preserve this exact pet identity in every view; do not redesign its species, silhouette, face, palette relationship, materials, or signature object.
 {system_prompt}
 
-Primary request: Create one finished 1024x1024 Character Bible for {board_input['display_name']}. Render legible integrated typography as part of the image, not placeholder glyphs. {type_direction}
+Primary request: Create one finished 1024x1024 Character Bible for {board_input['display_name']}. Render legible integrated typography, never placeholder glyphs.
 
-Required information groups: identity, signature, turnaround, silhouette and body-ratio rules, palette, material language, expression strip, motion/state strip, technical material callouts, scale-readability check, and must-preserve rules. Render concise headings and short callouts only; do not use paragraphs, force a fixed language, title list, or typography system across users.
+Required evidence: identity and signature; turnaround, silhouette/body ratios, and scale; palette/material language; expression range; behavioral proof sequence; and must-preserve rules. Behavioral proof must read as before, response, and resolve through posture, face, and an attached signature mechanism, not generic idle poses.
 
-Board content: arrange a hero, turnaround views, proportion diagram, expression crops, motion/state poses, material close-ups, palette, scale-readability check, and must-preserve information. {arrangement_direction} All views must visibly be the same official canonical base character.
-Subject: {board_input['form_metaphor']}. Silhouette: {_joined(board_input['silhouette_tokens'])}. Palette: {_joined(board_input['palette_tokens'])}. Materials: {_joined(board_input['material_tokens'])}. Signature object: {board_input['signature_hook']}.
+Board content: hero, turnaround, proportion diagram, expression crops, behavioral proof poses, material close-ups, palette, scale-readability check, and must-preserve information. {arrangement_direction} Let the character's geometry shape hierarchy, grouping, and macro-composition, not a uniform set of tiles or generic catalog grid. Every view is the same official canonical base character.
+Subject: {board_input['form_metaphor']}. Silhouette: {_joined(board_input['silhouette_tokens'])}. Palette: {_joined(board_input['palette_tokens'])}. Materials: {_joined(board_input['material_tokens'])}. Signature object: {board_input['signature_hook']}. Companion behavior: {board_input.get('interaction_signature', '')}. Character-specific composition: {board_input.get('board_composition', '')}.
 Constraints: preserve the official canonical base; keep all copy concise and readable; do not redesign the character; { _joined(board_input['anti_drift']) }.
 Avoid: astrology symbols, charts, planets, birth data, logos, watermarks, scenery, detached effects, additional characters, low-contrast text, garbled glyphs, empty panels, or generic toy-product presentation."""
+    if len(prompt) > _PROVIDER_SAFE_PROMPT_CHARS:
+        raise ValueError("Character Bible prompt exceeds the provider-safe limit")
+    return prompt
 
 
 def build_render_request(board_input: dict[str, Any]) -> dict[str, Any]:

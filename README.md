@@ -84,13 +84,16 @@ base 与设计板，后续九状态动画无法悄悄换成另一只角色。
 角色一旦进入动画，最重要的是稳定，而不是某一张图的瞬间好看。因此每一步都有
 明确的责任边界：
 
-- **Candidate compiler**：从本地事实得到恰好三个视觉安全方向。
+- **Candidate compiler**：从本地事实得到恰好三个视觉安全方向，并为每个方向给出
+  不泄露个人资料的陪伴动作、版式阅读逻辑，以及稳定但非产品统一的色彩和材质关系。
+  它不会把所有用户压成同一套色盘、材料或吉祥物。
 - **Hatch base**：为每个方向建立唯一、可动画的角色身份。
 - **Base acceptance**：只登记三个 session 内、base job 已完成且经过人工视觉确认的
   canonical base；这一步是 Hatch 与 Character Bible 的明确交接。
-- **Character Bible**：使用同一个 base 呈现专业版式的身份、比例、材质和动作
-  说明。版式来自现代信息栅格、藏品标注与角色设定集语言，但不固定产品色彩、材质
-  或字体。
+- **Character Bible**：使用同一个 base 呈现专业版式的身份、比例、材质和行为
+  说明。V3 版式来自 Swiss information design、industrial design review 与藏品标注：
+  它把 `before -> response -> resolve` 作为角色行为证据，而不是一组可替换的静态卡片；
+  但不固定产品色彩、材质或字体。
 - **Character Bible QA**：确认身份一致、文字可读、版面完整后，才允许候选进入选择。
 - **Selected Hatch run**：锁定被选中 base 和 board 的哈希，拒绝旧分支或被改动素材。
 - **Delivery QA**：九个状态预览、帧检查、图集验证和显式视觉验收必须全部通过。

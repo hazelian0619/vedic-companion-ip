@@ -5,6 +5,9 @@ fixtures/
 reports/
 docs/
 references/
+!skill/
+!skill/references/
+!skill/references/*.md
 
 # Historical prototype entrypoints are intentionally not part of the portable
 # production Skill.

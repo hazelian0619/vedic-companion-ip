@@ -45,7 +45,7 @@ python3 "$SKILL_DIR/scripts/prepare_product_session.py" \
   --session-dir /absolute/path/to/session
 ```
 
-3. Each stable identity decision needs independent local evidence, but evidence and rationale remain private.
+3. Each stable identity decision needs independent local evidence, but evidence and rationale remain private. The public candidate carries a safe interaction signature, board-composition direction, and stable individual color/material relationships: use them to differentiate how the companion helps and how its evidence is read. These are individual design results, not a product-wide palette, material, mascot species, or decorative motif.
 4. Prepare exactly three official Hatch runs inside that session without generating images:
 
 ```bash
@@ -84,7 +84,7 @@ python3 "$SKILL_DIR/scripts/record_candidate_bases.py" \
   --note "<specific identity and animation-readiness verdict>"
 ```
 
-6. Render one text-bearing imagev2 Character Bible from each accepted official base. The official base is the only image input and the only identity authority. The default `professional-editorial-v2` board system is a character-free, source-traceable layout contract: International Typographic Style grid hierarchy, museum collection-documentation captions, and production character-bible evidence views. It does not impose a fixed palette, material, typeface, or character.
+6. Render one text-bearing imagev2 Character Bible from each accepted official base. The official base is the only identity authority; the board may document it but must never redesign it. The default `professional-editorial-v3` board system is a character-free, source-traceable layout contract: Swiss information design, industrial design review, and museum collection documentation. Use each candidate's board-composition direction to alter hierarchy and reading sequence rather than applying one generic catalog grid; show a `before -> response -> resolve` behavior proof as part of the board. It does not impose a fixed palette, material, typeface, or character. It rejects provider-unsafe prompt lengths locally before an image call.
 
 ```bash
 python3 "$SKILL_DIR/scripts/render_character_bible_cli.py" \

@@ -67,6 +67,7 @@ def build_hatch_handoff(candidate: dict[str, Any], *, candidate_id: str) -> dict
             f"{_safe_text(candidate.get('form_metaphor'))}. "
             f"Silhouette: {silhouette}. "
             f"Signature: {_safe_text(candidate.get('signature_hook'))}. "
+            f"Interaction: {_safe_text(candidate.get('interaction_signature'))}. "
             f"Avoid: {avoid}."
         ),
         "style_notes": f"Palette: {palette}. Materials: {materials}. Keep the character compact and readable at pet size.",
@@ -74,7 +75,7 @@ def build_hatch_handoff(candidate: dict[str, Any], *, candidate_id: str) -> dict
 
 
 def build_board_input(
-    candidate: dict[str, Any], *, official_base_path: str | Path, board_reference_path: str | Path = "", board_system: str = "professional-editorial-v2"
+    candidate: dict[str, Any], *, official_base_path: str | Path, board_reference_path: str | Path = "", board_system: str = "professional-editorial-v3"
 ) -> dict[str, Any]:
     """Create imagev2 input that is grounded in an official hatch-pet base."""
     _validate_candidate(candidate)
@@ -94,5 +95,7 @@ def build_board_input(
         "palette_tokens": [_safe_text(item) for item in candidate.get("palette_tokens", [])],
         "material_tokens": [_safe_text(item) for item in candidate.get("material_tokens", [])],
         "signature_hook": _safe_text(candidate.get("signature_hook")),
+        "interaction_signature": _safe_text(candidate.get("interaction_signature")),
+        "board_composition": _safe_text(candidate.get("board_composition")),
         "anti_drift": [_safe_text(item) for item in candidate.get("anti_drift", [])],
     }

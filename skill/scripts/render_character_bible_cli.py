@@ -62,7 +62,7 @@ def render_character_bible_cli(
     *,
     api_key_env: str,
     image_base_url: Optional[str],
-    board_system: str = "professional-editorial-v2",
+    board_system: str = "professional-editorial-v3",
 ) -> Path:
     session = ProductSession.create(Path(session_root))
     candidate, official_base = _accepted_candidate_and_base(session, candidate_id)
@@ -137,7 +137,7 @@ def main() -> int:
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--api-key-env", default="OPENAI_API_KEY")
     parser.add_argument("--image-base-url")
-    parser.add_argument("--board-system", default="professional-editorial-v2")
+    parser.add_argument("--board-system", default="professional-editorial-v3")
     args = parser.parse_args()
     try:
         print(

@@ -4,16 +4,18 @@ from board_system import resolve_board_system
 from character_bible import build_render_request
 
 
-def test_professional_editorial_board_system_has_traceable_sources_without_a_house_style():
-    system = resolve_board_system("professional-editorial-v2")
+def test_professional_editorial_v3_board_system_has_traceable_sources_without_a_house_style():
+    system = resolve_board_system("professional-editorial-v3")
 
     text = system["prompt"].lower()
     sources = system["sources"].lower()
     assert "turnaround" in text
     assert "must-preserve" in text
-    assert "international typographic style" in sources
+    assert "swiss information design" in sources
+    assert "industrial design review" in sources
     assert "museum collection documentation" in sources
-    assert "production character bible" in sources
+    assert "editorial argument" in text
+    assert "not a catalog page" in text
     assert "navy" not in text
     assert "copper" not in text
     assert "meridian" not in text
@@ -27,7 +29,7 @@ def test_board_request_needs_only_the_official_base_when_a_board_system_is_selec
     request = build_render_request(
         {
             "official_base_path": "/tmp/base.png",
-            "board_system": "professional-editorial-v2",
+            "board_system": "professional-editorial-v3",
             "ip_name": "Pilot",
             "display_name": "Pilot",
             "form_metaphor": "a compact guiding keeper",
@@ -43,3 +45,4 @@ def test_board_request_needs_only_the_official_base_when_a_board_system_is_selec
     assert "source foundations" in request["prompt"].lower()
     assert "reference image" not in request["prompt"].lower()
     assert "information-rich but not crowded" in request["prompt"].lower()
+    assert "behavioral proof sequence" in request["prompt"].lower()

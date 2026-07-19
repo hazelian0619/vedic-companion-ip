@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT))
 from session_contract import ProductSession
 
 
-ALLOWED_FIELDS = frozenset(
+REQUIRED_FIELDS = frozenset(
     {
         "candidate_id",
         "ip_name",
@@ -30,6 +30,8 @@ ALLOWED_FIELDS = frozenset(
         "anti_drift",
     }
 )
+OPTIONAL_FIELDS = frozenset({"interaction_signature", "board_composition"})
+ALLOWED_FIELDS = REQUIRED_FIELDS | OPTIONAL_FIELDS
 LIST_FIELDS = frozenset({"silhouette_tokens", "palette_tokens", "material_tokens", "anti_drift"})
 FORBIDDEN = re.compile(
     r"\b(?:birth|born|date of birth|latitude|longitude|coordinate|timezone|chart|astrolog|horoscope|zodiac|ascendant|nakshatra|dasha|ayanamsa|ephemeris|saturn|jupiter|rahu|ketu)\b",
@@ -51,11 +53,11 @@ def _slug(value: str) -> str:
 
 
 def validate_candidate(candidate: Any) -> dict[str, Any]:
-    if not isinstance(candidate, dict) or set(candidate) != ALLOWED_FIELDS:
-        raise ValueError("unsafe candidate: exact visual-safe schema required")
+    if not isinstance(candidate, dict) or not REQUIRED_FIELDS.issubset(candidate) or not set(candidate).issubset(ALLOWED_FIELDS):
+        raise ValueError("unsafe candidate: visual-safe schema required")
 
     clean: dict[str, Any] = {}
-    for field in ALLOWED_FIELDS - LIST_FIELDS:
+    for field in REQUIRED_FIELDS - LIST_FIELDS:
         clean[field] = _text(candidate[field], field)
     clean["candidate_id"] = _slug(clean["candidate_id"])
     for field in LIST_FIELDS:
@@ -63,6 +65,9 @@ def validate_candidate(candidate: Any) -> dict[str, Any]:
         if not isinstance(values, list) or not values:
             raise ValueError(f"unsafe candidate: {field} must be a non-empty text list")
         clean[field] = [_text(value, field) for value in values]
+    for field in OPTIONAL_FIELDS:
+        if field in candidate:
+            clean[field] = _text(candidate[field], field)
 
     if FORBIDDEN.search(json.dumps(clean, ensure_ascii=False)):
         raise ValueError("unsafe candidate: private or chart-derived wording detected")
@@ -91,7 +96,7 @@ def prepare_run(candidate: dict[str, Any], output_dir: Path, hatch_pet_dir: Path
         "--display-name", candidate["display_name"],
         "--description", candidate["description"],
         "--output-dir", str(run_dir),
-        "--pet-notes", f"{candidate['form_metaphor']} Silhouette: {', '.join(candidate['silhouette_tokens'])}. Signature: {candidate['signature_hook']}. Avoid: {'; '.join(candidate['anti_drift'])}.",
+        "--pet-notes", f"{candidate['form_metaphor']} Silhouette: {', '.join(candidate['silhouette_tokens'])}. Signature: {candidate['signature_hook']}. Interaction: {candidate.get('interaction_signature', '')}. Avoid: {'; '.join(candidate['anti_drift'])}.",
         "--style-notes", f"Palette: {', '.join(candidate['palette_tokens'])}. Materials: {', '.join(candidate['material_tokens'])}. Keep the character compact and readable at pet size.",
     ]
     if force:
