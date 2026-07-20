@@ -375,20 +375,60 @@ ASTROLOGY_TERMS = (
     "house", "retrograde", "mahadasha", "planet", "graha", "rasi",
 )
 
+#: Chinese astrology vocabulary that must never reach an image request or a
+#: public candidate. Defense-in-depth for LLM-authored candidates: even under
+#: the all-English product rule, an authoring model could slip a CJK term, and
+#: CJK terms bypass the English-only ASTROLOGY_TERMS list.
+CHINESE_ASTROLOGY_TERMS = (
+    "行星", "月亮", "太阳", "星座", "宫位", "上升", "大运", "星宿",
+    "劫", "罗睺", "计都", "分盘", "飞星", "命主", "度数", "相位", "落宫",
+)
+
 
 def astrology_term_scan(text: str) -> list[str]:
-    """Return astrology terms found (case-insensitive, whole-word-ish).
+    """Return astrology terms found in ``text``.
 
-    'sign' is matched as a substring of 'signature'/'design' — so we exclude
-    bare 'sign' and instead match 'sign ' only when it's the astrology sense;
-    here we simply omit the bare word 'sign' to avoid false positives.
+    English terms match whole-word (case-insensitive) so ``Sun`` does not
+    false-trip on ``sunflower``/``sunday`` and ``Saturn`` does not trip
+    ``saturnine``. Chinese terms match by substring (CJK has no regex word
+    boundary). Bare ``sign`` is intentionally omitted — it would false-trip on
+    the design vocabulary (``signature``, ``design``); the astrology sense is
+    covered by ``ascendant``/``chart``/``rasi`` etc.
     """
     low = text.lower()
-    found = []
+    found: list[str] = []
     for term in ASTROLOGY_TERMS:
-        if term.lower() in low:
+        if re.search(rf"\b{re.escape(term.lower())}\b", low):
+            found.append(term)
+    for term in CHINESE_ASTROLOGY_TERMS:
+        if term in text:
             found.append(term)
     return found
+
+
+#: The portable candidate schema (references/character-bible-contract.md). A
+#: candidate may contain ONLY these fields. ``validate_candidate_schema``
+#: rejects anything outside this whitelist — this is the hard shape boundary
+#: for LLM-authored candidate output.
+CANDIDATE_SCHEMA_FIELDS = frozenset({
+    "candidate_id", "ip_name", "display_name", "description",
+    "form_metaphor", "silhouette_tokens", "palette_tokens",
+    "material_tokens", "signature_hook", "interaction_signature",
+    "board_composition", "anti_drift",
+})
+
+
+def validate_candidate_schema(candidate: dict) -> list[str]:
+    """Return unknown-field violations (empty list == schema-clean).
+
+    A candidate carrying any field outside ``CANDIDATE_SCHEMA_FIELDS`` is
+    rejected. This whitelist bounds what an LLM-authored candidate may carry,
+    so a drafting model cannot smuggle rationale, evidence, or chart refs into
+    a public candidate under a novel field name.
+    """
+    if not isinstance(candidate, dict):
+        return ["<not-a-dict>"]
+    return sorted(set(candidate) - CANDIDATE_SCHEMA_FIELDS)
 
 
 @dataclass
