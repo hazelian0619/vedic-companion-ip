@@ -7,8 +7,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
-MODULE_PATH = ROOT / "scripts" / "render_design_branch.py"
+sys.path.insert(0, str(ROOT / "skill"))
+MODULE_PATH = ROOT / "skill" / "scripts" / "render_design_branch.py"
 SPEC = importlib.util.spec_from_file_location("render_design_branch", MODULE_PATH)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)

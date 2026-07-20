@@ -16,7 +16,7 @@ import stat
 from pathlib import Path
 
 PKG = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PKG))
+sys.path.insert(0, str(PKG / "skill"))
 from companion_ip_contract import (  # noqa: E402
     privacy_scan, astrology_term_scan, build_design_safe_evidence, BirthInput,
     CompanionProfile, IdentityKernel, MappingEvidence, ImageRequest, COMPUTATION_SOURCE,
@@ -88,7 +88,7 @@ def test_modules_import():
 # ---------------------------- Stage 1 e2e (deterministic) ------------------ #
 
 def _stage1(outdir):
-    _run([VEDIC_PY, str(PKG / "scripts/compute_chart_report.py"),
+    _run([VEDIC_PY, str(PKG / "skill" / "scripts" / "compute_chart_report.py"),
           "--intake", str(INTAKE), "--outdir", str(outdir)])
 
 
@@ -131,7 +131,7 @@ def test_compute_fails_closed_on_missing_birth():
         bad = tdp / "bad.json"
         bad.write_text(json.dumps({"birth_date": "1990-01-01", "birth_time": "",
                                    "birth_place": "", "timezone": "", "lat": 0, "lon": 0}))
-        r = subprocess.run([VEDIC_PY, str(PKG / "scripts/compute_chart_report.py"),
+        r = subprocess.run([VEDIC_PY, str(PKG / "skill" / "scripts" / "compute_chart_report.py"),
                            "--intake", str(bad), "--outdir", str(tdp)],
                           capture_output=True, text=True)
         assert r.returncode != 0
