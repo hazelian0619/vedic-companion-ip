@@ -13,7 +13,37 @@ private intake -> local deterministic chart provider -> three visual-safe candid
 -> user selects one base/board pair -> official hatch-pet rows, QA, and Codex package
 ```
 
-The astrology provider is local only. This Skill compiles three visual-safe candidates when a local Vedic runtime is configured; otherwise it accepts an already-validated candidate manifest. It does not replace the installed `hatch-pet` Skill. Official `hatch-pet` owns every canonical base and animation row. Imagev2 may render Character Bibles only from an accepted official base.
+The astrology provider is local only. This Skill drafts three visual-safe candidates
+with an LLM from de-identified chart facts (when a local Vedic runtime and an
+image-API provider are configured), then gates them through `candidate_validator`.
+It does not replace the installed `hatch-pet` Skill. Official `hatch-pet` owns
+every canonical base and animation row. Imagev2 may render Character Bibles only
+from an accepted official base.
+
+## Step 0 — Preflight (onboarding)
+
+Before any run, verify the environment and auto-install anything missing. The
+agent reads the output and guides the user through any gap before continuing:
+
+```bash
+python3 "$SKILL_DIR/scripts/preflight.py"
+```
+
+preflight detects VEDIC_PY, the official `hatch-pet` skill, the `imagegen`
+system skill, and the image-API credentials in the user's process environment.
+With `--auto-install` (default) it installs VEDIC_PY into a scoped skill-local
+venv and clones `hatch-pet` when `HATCH_PET_REPO` is set; it verifies the image
+API with a live `/v1/models` call. Credentials are read from process env only
+and are never printed or written. `--check` is read-only for CI. If any
+required dependency is missing, preflight exits non-zero (fail-closed) and the
+flow stops here.
+
+The user sets the image API in their OWN process environment (never in a file):
+```bash
+export IMAGEV2_API_KEY='sk-...'        # user's key; never commit
+export IMAGEV2_ENDPOINT='https://tok.fan/v1'
+export IMAGEN_MODEL='gpt-image-2'
+```
 
 ## Privacy Gate
 
@@ -36,14 +66,42 @@ Set the installed Skill directory once for all bundled runners:
 SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/vedic-companion-ip"
 ```
 
-1. Run the local deterministic chart provider and keep its output in an owner-only private directory.
-2. Create a product session. This runs local computation, enforces owner-only private outputs, compiles exactly three visual-safe candidate contracts, and keeps candidate evidence private:
+1. Create a product session. This runs local deterministic chart computation
+   (VEDIC_PY: PyJHora + Swiss Ephemeris), enforces owner-only private outputs
+   (0o600), writes the private chart-report and the de-identified pet-profile,
+   and stops at `chart_ready`. It is credential-free:
 
 ```bash
 python3 "$SKILL_DIR/scripts/prepare_product_session.py" \
   --intake /absolute/path/to/private-birth-input.json \
   --session-dir /absolute/path/to/session
 ```
+
+2. Draft three visual-safe candidates with the LLM and gate them. `author_candidates.py`
+   reads the de-identified pet-profile (ONLY `design_safe_evidence` — raw birth
+   data, coordinates, timezone, and rationale in the profile are never sent),
+   calls an OpenAI-compatible LLM guided by the
+   [candidate-authoring-framework](references/candidate-authoring-framework.md) to
+   draft three genuinely distinct directions, preserves a private draft, then
+   hands them to `candidate_validator` — the hard gate (schema whitelist +
+   privacy scan + astrology-term scan, fail-closed; rejects non-distinct
+   directions). It records the public `safe-candidates.json` + a private evidence
+   ledger and advances to `candidates_ready`:
+
+```bash
+python3 "$SKILL_DIR/scripts/author_candidates.py" \
+  --session-dir /absolute/path/to/session \
+  --api-key-env IMAGEV2_API_KEY \
+  --llm-base-url "https://tok.fan/v1/chat/completions" \
+  --llm-model "gpt-5.4-mini"
+```
+
+The drafting-LLM provider is configurable (`--llm-base-url`, `--llm-model`,
+`--api-key-env`) so a privacy-conscious user can point it at a local model. The
+candidate TEXT the LLM returns is untrusted and is gated before any of it becomes
+public or reaches the image model. If the gate rejects the draft, the session
+stays at `chart_ready`; the private draft is preserved for inspection, and
+`validate_candidates.py` can re-validate an edited draft without re-calling the LLM.
 
 3. Each stable identity decision needs independent local evidence, but evidence and rationale remain private. The public candidate carries a safe interaction signature, board-composition direction, and stable individual color/material relationships: use them to differentiate how the companion helps and how its evidence is read. These are individual design results, not a product-wide palette, material, mascot species, or decorative motif.
 4. Prepare exactly three official Hatch runs inside that session without generating images:
@@ -182,9 +240,13 @@ Keep `pet.json`, `spritesheet.webp`, validation JSON, contact sheet, all preview
 
 ## Resources
 
+- `scripts/preflight.py`: onboarding — detects + auto-installs VEDIC_PY/hatch-pet, verifies the image API for real; fail-closed on missing.
+- `scripts/prepare_product_session.py`: credential-free local chart compute; writes private chart-report + de-identified pet-profile; stops at chart_ready.
+- `scripts/author_candidates.py`: drafts 3 candidates via an OpenAI-compatible LLM from de-identified facts only; preserves a private draft; hands off to the validator.
+- `candidate_validator.py`: the hard gate — schema whitelist + privacy/astrology scan + 3-distinct-directions; records public safe-candidates.json + private ledger; advances to candidates_ready.
+- `scripts/validate_candidates.py`: ad-hoc re-validate+record of a draft JSON (no LLM call).
 - `scripts/prepare_candidate_runs.py`: validates three safe candidates and scaffolds three official hatch-pet seed runs without generating images.
 - `scripts/record_candidate_bases.py`: accepts exactly the three completed, session-owned official canonical bases before Character Bible rendering.
-- `scripts/prepare_product_session.py`: creates private chart artifacts, a private evidence ledger, and three public visual-safe candidates.
 - `scripts/compute_chart_report.py`: local PyJHora/Swiss Ephemeris computation used by the product-session entry; requires the configured `VEDIC_PY` runtime.
 - `scripts/imagegen_preflight.py`: redaction-safe configuration check for the official imagegen CLI fallback.
 - `scripts/hatch_base_cli.py`: runs one official Hatch base job against a user-configured OpenAI-compatible provider without persisting credentials.
@@ -201,3 +263,4 @@ Keep `pet.json`, `spritesheet.webp`, validation JSON, contact sheet, all preview
 - `scripts/render_character_bible.py`: legacy Chat Completions transport; do not use with an image provider that supports only `images/edits`.
 - `scripts/render_design_branch.py` and `scripts/prepare_selected_hatch_run.py`: legacy budget-preview path only; do not use for the production Hatch-first path.
 - `references/character-bible-contract.md`: portable input and handoff contract.
+- `references/candidate-authoring-framework.md`: the standardized thinking for deriving three distinct directions from chart signals.
