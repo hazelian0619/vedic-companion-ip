@@ -115,6 +115,7 @@ def test_skill_bundles_the_selected_branch_runners_and_their_local_modules():
         "scripts/prepare_product_session.py",
         "scripts/author_candidates.py",
         "scripts/validate_candidates.py",
+        "scripts/preflight.py",
         "scripts/prepare_candidate_runs.py",
         "scripts/compute_chart_report.py",
         "scripts/imagegen_preflight.py",
