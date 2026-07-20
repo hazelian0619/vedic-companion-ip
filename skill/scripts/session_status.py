@@ -16,7 +16,7 @@ from session_contract import ProductSession
 
 _NEXT_ACTION = {
     "intake_ready": "compute_private_chart",
-    "chart_ready": "compile_candidates",
+    "chart_ready": "author_candidates",
     "candidates_ready": "prepare_candidate_runs",
     "candidate_runs_ready": "generate_hatch_bases",
     "candidate_bases_ready": "render_character_bibles",

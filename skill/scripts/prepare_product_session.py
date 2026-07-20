@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
-"""Create a private companion session and compile its three public candidates."""
+"""Create a private companion session: run local chart computation, stop at chart_ready.
+
+This script is CREDENTIAL-FREE. It runs the local deterministic Vedic compute
+(VEDIC_PY: PyJHora + Swiss Ephemeris), writes the private chart-report + the
+de-identified pet-profile (0o600), and advances the session to chart_ready.
+
+Candidate AUTHORING is a separate, credential-bearing step —
+``scripts/author_candidates.py`` — which calls an LLM to draft 3 candidates and
+gates them via ``candidate_validator``. Keeping compute and authoring split means
+the image-API key is only ever needed for the authoring step, and the privacy
+boundary between local facts and external calls stays explicit.
+"""
 from __future__ import annotations
 
 import argparse
@@ -9,14 +20,17 @@ import sys
 from pathlib import Path
 from typing import Callable, Iterable
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+ROOT = Path(__file__).resolve().parent.parent  # skill/
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-from candidate_compiler import CompiledCandidates, compile_candidates
-from session_contract import ProductSession
+from session_contract import ProductSession  # noqa: E402
 
 _DEFAULT_VEDIC_PYTHON = Path(
-    os.environ.get("VEDIC_PY", str(Path.home() / ".claude" / "skills" / "vedic-calculator" / "venv" / "bin" / "python"))
+    os.environ.get(
+        "VEDIC_PY",
+        str(Path.home() / ".claude" / "skills" / "vedic-calculator" / "venv" / "bin" / "python"),
+    )
 )
 
 
@@ -28,10 +42,19 @@ def _succeeded(result: object) -> bool:
     return all(bool(getattr(item, "ok", False)) for item in result)
 
 
-def run_private_compute(intake_path: Path, outdir: Path, *, vedic_python: Path = _DEFAULT_VEDIC_PYTHON) -> bool:
+def run_private_compute(
+    intake_path: Path, outdir: Path, *, vedic_python: Path = _DEFAULT_VEDIC_PYTHON
+) -> bool:
     if not vedic_python.is_file():
         raise RuntimeError(f"Vedic Python runtime not found: {vedic_python}")
-    command = [str(vedic_python), str(ROOT / "scripts" / "compute_chart_report.py"), "--intake", str(intake_path), "--outdir", str(outdir)]
+    command = [
+        str(vedic_python),
+        str(ROOT / "scripts" / "compute_chart_report.py"),
+        "--intake",
+        str(intake_path),
+        "--outdir",
+        str(outdir),
+    ]
     result = subprocess.run(command, capture_output=True, text=True)
     if result.returncode:
         detail = (result.stderr or result.stdout).strip()
@@ -44,7 +67,8 @@ def prepare_session(
     session_root: Path,
     *,
     compute_fn: Callable[[Path, Path], object] = run_private_compute,
-) -> CompiledCandidates:
+) -> ProductSession:
+    """Run local compute and stop at chart_ready. Candidate authoring is a separate step."""
     session = ProductSession.create(Path(session_root))
     chart_dir = session.root / "private" / "chart"
     result = compute_fn(Path(intake_path), chart_dir)
@@ -55,8 +79,10 @@ def prepare_session(
         if not artifact.is_file():
             raise RuntimeError(f"local chart computation did not create {name}")
         os.chmod(artifact, 0o600)
-    session.transition("chart_ready", artifact_paths=[], decision="local chart computation accepted")
-    return compile_candidates(chart_dir / "pet-profile.json", session.root)
+    session.transition(
+        "chart_ready", artifact_paths=[], decision="local chart computation accepted"
+    )
+    return session
 
 
 def main() -> int:
@@ -65,8 +91,8 @@ def main() -> int:
     parser.add_argument("--session-dir", required=True, type=Path)
     args = parser.parse_args()
     try:
-        result = prepare_session(args.intake, args.session_dir)
-        print(result.candidates_path)
+        session = prepare_session(args.intake, args.session_dir)
+        print(session.root)
         return 0
     except (OSError, RuntimeError, ValueError) as error:
         print(str(error), file=sys.stderr)

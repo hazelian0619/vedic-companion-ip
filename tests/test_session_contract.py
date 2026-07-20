@@ -69,7 +69,10 @@ def test_session_can_record_prepared_candidate_runs_before_any_base_exists(tmp_p
     assert manifest["state"] == "candidate_runs_ready"
 
 
-def test_prepare_session_compiles_candidates_from_private_profile(tmp_path: Path):
+def test_prepare_session_computes_chart_and_stops_at_chart_ready(tmp_path: Path):
+    """prepare_session is credential-free: it computes the chart and stops at
+    chart_ready. Candidate AUTHORING is a separate, credential-bearing step
+    (scripts/author_candidates.py); no candidates are produced here."""
     intake = tmp_path / "intake.json"
     intake.write_text("{}", encoding="utf-8")
 
@@ -92,12 +95,14 @@ def test_prepare_session_compiles_candidates_from_private_profile(tmp_path: Path
         )
         return True
 
-    result = prepare_session(intake, tmp_path / "run", compute_fn=fake_compute)
+    session = prepare_session(intake, tmp_path / "run", compute_fn=fake_compute)
 
-    assert result.candidates_path.is_file()
     assert stat.S_IMODE((tmp_path / "run" / "private" / "chart" / "chart-report.json").stat().st_mode) == 0o600
+    assert (tmp_path / "run" / "private" / "chart" / "pet-profile.json").is_file()
     manifest = json.loads((tmp_path / "run" / "session.json").read_text(encoding="utf-8"))
-    assert manifest["state"] == "candidates_ready"
+    assert manifest["state"] == "chart_ready"
+    # candidates are NOT yet produced — authoring is a separate step
+    assert not (tmp_path / "run" / "safe-candidates.json").exists()
 
 
 def test_private_compute_runs_the_configured_vedic_python(monkeypatch, tmp_path: Path):

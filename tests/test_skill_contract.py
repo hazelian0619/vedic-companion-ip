@@ -110,9 +110,11 @@ def test_preparer_rejects_private_or_chart_content(tmp_path: Path):
 
 def test_skill_bundles_the_selected_branch_runners_and_their_local_modules():
     required = (
-        "candidate_compiler.py",
+        "candidate_validator.py",
         "session_contract.py",
         "scripts/prepare_product_session.py",
+        "scripts/author_candidates.py",
+        "scripts/validate_candidates.py",
         "scripts/prepare_candidate_runs.py",
         "scripts/compute_chart_report.py",
         "scripts/imagegen_preflight.py",
