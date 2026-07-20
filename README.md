@@ -1,63 +1,73 @@
 # Vedic Companion IP
 
-> Turn birth information computed only locally into a Codex pet that can keep
-> the user company long-term. It does not send the chart report to the model,
-> nor does it generate a pet from a single generic prompt.
+> Turn locally-computed birth-chart facts into a long-term Codex companion pet —
+> without sending birth data, chart language, or rationale to image generation.
 
-Vedic Companion IP is an installable Codex Skill. It first performs deterministic
-chart computation locally, then converges the result into three visual-safe
-candidate IPs that carry no personal data. After the user selects one direction,
-the official `hatch-pet` skill turns it into an installable, animated Codex pet.
+[![CI](https://github.com/hazelian0619/vedic-companion-ip/actions/workflows/ci.yml/badge.svg)](https://github.com/hazelian0619/vedic-companion-ip/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](requirements.txt)
+
+Vedic Companion IP is an installable Codex Skill that builds a personalized
+companion pet from a Vedic (Jyotish) birth chart. It is **not** a one-shot image
+generator. It computes the chart locally, converges it into three design-safe
+candidate characters, lets you pick one, then hands the selected identity to the
+official `hatch-pet` skill for stable nine-state animation and packaging.
+
+The product's core constraint is **privacy by design**: raw birth data, chart
+reports, and reasoning never leave your machine and never enter an image prompt.
+Only de-identified visual tokens reach the image model, behind a hard,
+code-enforced gate.
+
+## Table of contents
+
+- [How it works](#how-it-works)
+- [Privacy by design](#privacy-by-design)
+- [Quick start](#quick-start)
+- [What you get](#what-you-get)
+- [Development](#development)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
+
+## How it works
 
 ```text
 private intake
-  -> local chart computation
-  -> three visual-safe IP candidates
+  -> local chart computation            (PyJHora + Swiss Ephemeris, local only)
+  -> three visual-safe IP candidates   (LLM-authored, gated)
   -> three official Hatch canonical bases
   -> three text-bearing Character Bibles
   -> user chooses one
   -> selected Hatch animation, QA, and Codex pet package
 ```
 
-## What the user experiences
+Two skills own two responsibilities:
 
-1. The user provides birth information only locally. The system computes but does
-   not send raw input, coordinates, the report, or reasoning to the image service.
-2. The user sees three directions, not a single "only answer" decided for them.
-3. Each direction has a Character Bible built from the same Hatch canonical base,
-   used to understand the character's silhouette, materials, motion, and the
-   recognition features that must not change.
-4. Once the user confirms one, only that one proceeds to nine-state animation,
-   atlas, visual QA, and the install package.
+- The official **`hatch-pet`** skill owns the canonical character base, the
+  nine-state animation, and the final install package.
+- **Vedic Companion IP** owns the chart→candidate translation and the
+  text-bearing Character Bible. It renders *from* an official base; it never
+  redefines the character.
 
-This order is the product constraint: `hatch-pet` owns the character identity,
-animation, and final package; image generation only produces a text-bearing
-Character Bible for the same character and cannot redefine the pet.
+This separation is why the companion stays visually stable across animation
+frames instead of being re-guessed on every generation.
 
-The whole process lives in one local session. It is not a cloud account or a
-black-box queue: the session writes every publicly inspectable stage as
-verifiable state and keeps private computation in an owner-only directory. So
-the user can pause to think at the three design boards, or continue after
-selecting. Any attempt to skip the Hatch base, swap already-selected material,
-or feed an external image back into the flow is rejected.
+## Privacy by design
 
-## Two boundaries
-
-| Local private layer | Public layer usable for visual production |
+| Local private layer (never leaves) | Public layer (image-safe) |
 | --- | --- |
 | Birth date, time, place, coordinates, timezone | Three design-safe candidate characters |
-| Raw chart report and reasoning | Hatch canonical base |
-| Private evidence ledger for candidates | Character Bible, selection record, QA, animation package |
+| Raw chart report and rationale | Hatch canonical base |
+| Private candidate evidence ledger | Character Bible, selection record, QA, animation package |
 
 The private layer never enters an image prompt, a Skill artifact, the Git
-repository, or the install package. The public layer is checked by schema,
-keyword scanning, SHA-256 locking, and state gates.
+repository, or the install package. The public layer is checked by schema
+whitelist, keyword + East-Asian-script scanning, SHA-256 locking, and session
+state gates. Credentials are process-only environment variables — never written
+to files, source, prompts, or images.
 
-## Install to Codex
+## Quick start
 
-Prerequisites: a local Codex, the official `hatch-pet` Skill, the system
-`imagegen` Skill, and a working local Vedic runtime. Image-service credentials
-stay only in the current process environment.
+### 1. Install the skill
 
 ```bash
 git clone https://github.com/hazelian0619/vedic-companion-ip.git
@@ -66,36 +76,23 @@ mkdir -p "$HOME/.codex/skills"
 ln -s "$PWD/skill" "$HOME/.codex/skills/vedic-companion-ip"
 ```
 
-The link intentionally does not overwrite an installed Skill of the same name; to
-update, inspect and remove the old link first, then recreate it.
+The link does not overwrite an existing skill of the same name; to update, remove
+the old link first, then recreate it.
 
-After install, describe the need directly in Codex, for example:
-
-```text
-From my birth information, make three selectable long-term companion-pet
-directions; compute locally, show me the character design boards first, and
-make the Codex pet only after I select one.
-```
-
-The full runtime commands, input contract, and failure handling live in
-[skill/SKILL.md](skill/SKILL.md). That file is the single operational manual for
-automated execution.
-
-## Onboarding (preflight)
-
-Before the first run, check the environment and auto-install anything missing:
+### 2. Verify your environment (preflight)
 
 ```bash
 python3 "$HOME/.codex/skills/vedic-companion-ip/scripts/preflight.py"
 ```
 
-preflight detects VEDIC_PY, the official `hatch-pet` skill, the `imagegen`
-system skill, and the image-API credentials in your environment. With
-`--auto-install` (the default) it installs VEDIC_PY into a scoped skill-local
-venv and clones `hatch-pet` when `HATCH_PET_REPO` is set; it verifies the image
-API with a live `/v1/models` call. Credentials are read from process env only
-and are never printed or written. `--check` is a read-only mode for CI. Set your
-image API in your own process environment:
+`preflight` detects the local Vedic runtime, the official `hatch-pet` skill, the
+`imagegen` system skill, and your image-API credentials. With `--auto-install`
+(the default) it installs the Vedic runtime into a scoped venv and clones
+`hatch-pet` when `HATCH_PET_REPO` is set; it verifies the image API with a live
+`/v1/models` call. `--check` is read-only (for CI). Any missing dependency exits
+non-zero (fail-closed) and stops the flow before any external call.
+
+### 3. Set your image API (process env only, never commit)
 
 ```bash
 export IMAGEV2_API_KEY='sk-...'               # your key; never commit it
@@ -103,66 +100,60 @@ export IMAGEV2_ENDPOINT='https://tok.fan/v1'
 export IMAGEN_MODEL='gpt-image-2'
 ```
 
-## The rhythm of one full experience
+### 4. Use it in Codex
 
-First compute locally and get three candidate directions. The system prepares an
-official Hatch run for each direction to form an animatable character base; only
-then does it generate a Character Bible with text, material, proportion, and
-motion notes from that same base. The user makes a single choice among the three
-boards. The selection locks the matching base and board, so the subsequent
-nine-state animation cannot silently switch to a different character.
+```text
+From my birth information, make three selectable long-term companion-pet
+directions; compute locally, show me the character design boards first, and
+make the Codex pet only after I select one.
+```
 
-This is why it suits long-term companionship better than "generate one pet image":
-every layer protects the same character identity instead of re-guessing what it
-should look like on each generation.
+The full runtime commands, input contract, and failure rules are in
+[skill/SKILL.md](skill/SKILL.md) — the single operational manual for automated
+execution.
 
-## Why not one-shot image generation
+## What you get
 
-Once a character enters animation, the priority is stability, not a single
-frame's momentary appeal. So each step has a clear responsibility boundary:
+1. **Local-only computation.** You provide birth info locally; the system
+   computes but never sends raw input, coordinates, the report, or reasoning to
+   the image service.
+2. **Three directions, not one.** You see three genuinely distinct companion
+   directions — authored from your chart's actual tensions, not a fixed
+   taxonomy — instead of a single algorithm-decided answer.
+3. **A human decision preserved.** You pick one of the three. The system never
+   picks the final companion for you.
+4. **Stable identity across animation.** Your selection locks the canonical base
+   and board by SHA-256, so the subsequent nine-state animation cannot silently
+   switch to a different character. Every layer protects one identity instead of
+   re-guessing what it should look like.
 
-- **Candidate drafter** (`author_candidates.py`): calls an LLM to draft exactly
-  three visual-safe directions from de-identified chart facts, guided by the
-  authoring framework. It does not compress every user into one palette,
-  material, mascot species, or decorative motif.
-- **Candidate validator** (`candidate_validator.py`): the hard gate. Enforces the
-  schema whitelist, privacy scan, and astrology-term scan fail-closed; requires
-  three genuinely distinct directions; records the public candidates and the
-  private evidence ledger.
-- **Hatch base**: establishes a unique, animatable character identity for each
-  direction.
-- **Base acceptance**: registers only the three session-owned canonical bases
-  whose base job completed and passed visual review; this is the explicit
-  handoff from Hatch base to Character Bible.
-- **Character Bible**: uses the same base to present identity, proportion,
-  material, and behavior notes in a professional layout. The v3 layout draws on
-  Swiss information design, industrial design review, and museum collection
-  documentation; it uses `before -> response -> resolve` as character behavior
-  evidence, not a set of replaceable static cards. It does not fix the product
-  palette, material, or typeface.
-- **Character Bible QA**: confirms identity consistency, readable text, and
-  complete layout before a candidate becomes selectable.
-- **Selected Hatch run**: locks the hash of the selected base and board and
-  rejects old branches or tampered material.
-- **Delivery QA**: the nine-state previews, frame checks, atlas validation, and
-  explicit visual acceptance must all pass.
+Each stage is an auditable session state with fail-closed rules: no base → no
+Bible; identity drift → regenerate the board, never the base; no selection →
+stop at three boards; any privacy-gate failure → stop before any external call.
 
-## Development and verification
+## Development
 
 ```bash
 python3 -m pip install -r requirements.txt
-python3 -m pytest -q
-python3 "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" skill
+python3 -m pytest -q                 # 135 tests; CI runs on every push/PR
 ```
 
-The repository keeps only executable production source, the Skill, tests, and
-documentation. All real user data, session artifacts, historical images,
-reports, private evidence, and credentials are Git-ignored and cannot be
-committed.
+The repository ships only executable production source, the Skill, tests, and
+docs. All real user data, session artifacts, images, reports, private evidence,
+and credentials are Git-ignored and cannot be committed.
 
-## Current boundaries
+## License
 
-This repository ships the reusable workflow and quality gates. It does not ship
-any real user's pet, chart, image, or service key. The user's selection of a
-character is an intentional human decision; the system never picks the final
-companion from the three directions on the user's behalf.
+MIT — see [LICENSE](LICENSE). The repository ships the reusable workflow and
+quality gates; it does not ship any real user's pet, chart, image, or service key.
+
+## Acknowledgments
+
+This skill composes external skills and a local astronomy stack:
+
+- **hatch-pet** (official Codex skill) — owns every canonical character base,
+  animation row, and the final install package.
+- **imagegen** (system skill) — the official image CLI used for base + board jobs.
+- **vedic-calculator** — the local runtime for deterministic chart computation.
+- **PyJHora** and **pysweph / [Swiss Ephemeris](https://www.astro.com/swisseph/)**
+  for ashtakavarga, dasha, shadbala, and divisional charts.
