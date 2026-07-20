@@ -17,7 +17,7 @@ def prepared_run(tmp_path: Path) -> Path:
     return run
 
 
-def test_base_cli_uses_ephemeral_provider_configuration_and_updates_official_manifest(tmp_path: Path, monkeypatch):
+def test_base_cli_uses_ephemeral_provider_configuration_and_updates_official_manifest(tmp_path: Path, monkeypatch, fake_imagegen):
     run = prepared_run(tmp_path)
     monkeypatch.setenv("USER_IMAGE_KEY", "secret")
     captured = {}
@@ -42,7 +42,7 @@ def test_base_cli_uses_ephemeral_provider_configuration_and_updates_official_man
     assert "secret" not in (run / "imagegen-jobs.json").read_text(encoding="utf-8")
 
 
-def test_base_cli_refuses_to_run_without_the_user_selected_key_environment(tmp_path: Path, monkeypatch):
+def test_base_cli_refuses_to_run_without_the_user_selected_key_environment(tmp_path: Path, monkeypatch, fake_imagegen):
     run = prepared_run(tmp_path)
     monkeypatch.delenv("MISSING_KEY", raising=False)
 

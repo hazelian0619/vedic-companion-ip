@@ -54,7 +54,7 @@ def _accepted_base_session(tmp_path: Path) -> tuple[ProductSession, Path]:
     return session, base
 
 
-def test_character_bible_cli_uses_the_accepted_session_base_and_never_persists_provider_credentials(tmp_path: Path, monkeypatch):
+def test_character_bible_cli_uses_the_accepted_session_base_and_never_persists_provider_credentials(tmp_path: Path, monkeypatch, fake_imagegen):
     session, base = _accepted_base_session(tmp_path)
     out = session.root / "candidates" / "a" / "character-bible.png"
     monkeypatch.setenv("USER_IMAGE_KEY", "secret")
