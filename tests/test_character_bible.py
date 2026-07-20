@@ -10,7 +10,7 @@ def safe_board_input() -> dict:
         "official_base_path": "/tmp/official-base.png",
         "board_reference_path": "/tmp/character-bible-reference.png",
         "ip_name": "Meridian",
-        "display_name": "Meridian / 司辰",
+        "display_name": "Meridian Steward",
         "form_metaphor": "a bell-shaped keeper that points gently forward",
         "silhouette_tokens": ["peaked soft cowl", "rounded bell body", "wide stable base"],
         "palette_tokens": ["pale silvery blue", "warm ivory", "amber accent"],

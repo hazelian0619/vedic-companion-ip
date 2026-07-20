@@ -8,7 +8,7 @@ from candidate_handoff import build_board_input, build_hatch_handoff
 def safe_candidate() -> dict:
     return {
         "ip_name": "Meridian",
-        "display_name": "Meridian / 司辰",
+        "display_name": "Meridian Steward",
         "subject_archetype": "a compact luminous hermit-guide companion",
         "form_metaphor": "a bell-shaped keeper that points gently forward",
         "silhouette_tokens": ["peaked soft cowl", "rounded bell body", "wide stable base"],

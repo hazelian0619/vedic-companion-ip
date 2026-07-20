@@ -9,7 +9,7 @@ def test_render_request_keeps_base_first_and_board_reference_second():
             "official_base_path": "/tmp/base.png",
             "board_reference_path": "/tmp/board-reference.png",
             "ip_name": "Meridian",
-            "display_name": "Meridian / 司辰",
+            "display_name": "Meridian Steward",
             "form_metaphor": "a bell-shaped keeper",
             "silhouette_tokens": ["pointed cowl"],
             "palette_tokens": ["pale blue", "amber"],

@@ -90,8 +90,14 @@ def _check_one(candidate: Any) -> None:
             raise ValueError(f"candidate missing required field: {field_name}")
 
     _slug(str(candidate["candidate_id"]))
-    for tok_field in ("silhouette_tokens", "palette_tokens", "material_tokens", "anti_drift"):
-        _as_text_list(candidate[tok_field])
+    # The 3 visual token lists must be non-empty lists of strings (a candidate
+    # with empty silhouette/palette/material is not a real direction). anti_drift
+    # may be empty (constraints are optional).
+    for tok_field in ("silhouette_tokens", "palette_tokens", "material_tokens"):
+        toks = _as_text_list(candidate[tok_field])
+        if not toks:
+            raise ValueError(f"candidate {tok_field} must not be empty")
+    _as_text_list(candidate["anti_drift"])
     for str_field in ("ip_name", "display_name", "form_metaphor", "signature_hook",
                        "interaction_signature", "board_composition"):
         if not str(candidate[str_field]).strip():
@@ -157,13 +163,20 @@ def validate_and_record(
     """
     if not isinstance(candidates, list) or len(candidates) != 3:
         raise ValueError("exactly three candidates required")
-    ids = [str(c["candidate_id"]) for c in candidates]
-    if len(set(ids)) != 3:
-        raise ValueError("candidate_ids must be unique")
+    if not isinstance(source_profile_sha256, str) or not source_profile_sha256:
+        raise ValueError("source_profile_sha256 must be a non-empty string")
+    if not isinstance(evidence_refs, list) or not all(isinstance(r, str) for r in evidence_refs):
+        raise ValueError("evidence_refs must be a list of strings")
 
+    # _check_one raises ValueError for non-dict candidates (and missing fields,
+    # schema/scan violations) BEFORE we ever subscript candidate_id, so a
+    # non-dict candidate fails closed with a contract error, not a TypeError.
     for c in candidates:
         _check_one(c)
     _check_distinct(candidates)
+    ids = [str(c["candidate_id"]) for c in candidates]
+    if len(set(ids)) != 3:
+        raise ValueError("candidate_ids must be unique")
 
     session = ProductSession.create(Path(session_root))
     candidates_path = session.write_public(

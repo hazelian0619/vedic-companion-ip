@@ -72,6 +72,16 @@ guiding vs connecting; or rest vs momentum vs repair; or sheltering vs beaconing
 vs bridging) — NOT a fixed taxonomy. Make each direction's form_metaphor AND \
 silhouette_tokens genuinely different from the others. Give each a distinct \
 signature object and a distinct interaction behavior.
+
+OUTPUT TEMPLATE — return ONLY this JSON with your content substituted in. \
+Keep every key exactly as written; add NO keys; drop NO keys; output NO prose \
+and NO code fence. Each *_tokens and anti_drift value is a non-empty list of \
+short strings:
+{"candidates":[
+  {"candidate_id":"settling-<short>-1","ip_name":"<coined name>","display_name":"<name>","description":"<one visual-safe sentence>","form_metaphor":"<central poetic object>","silhouette_tokens":["<shape token>","<shape token>"],"palette_tokens":["<color token>","<color token>"],"material_tokens":["<material token>","<material token>"],"signature_hook":"<one stable visual signature>","interaction_signature":"<visual-safe companion behavior>","board_composition":"<visual-safe reading direction>","anti_drift":["<visual constraint>","<visual constraint>"]},
+  {"candidate_id":"...-2","ip_name":"...","display_name":"...","description":"...","form_metaphor":"...","silhouette_tokens":["..."],"palette_tokens":["..."],"material_tokens":["..."],"signature_hook":"...","interaction_signature":"...","board_composition":"...","anti_drift":["..."]},
+  {"candidate_id":"...-3","ip_name":"...","display_name":"...","description":"...","form_metaphor":"...","silhouette_tokens":["..."],"palette_tokens":["..."],"material_tokens":["..."],"signature_hook":"...","interaction_signature":"...","board_composition":"...","anti_drift":["..."]}
+]}
 """
 
 
@@ -99,7 +109,27 @@ def _strip_code_fence(text: str) -> str:
     if m:
         return m.group(1).strip()
     m = re.search(r"\{.*\}", text, re.DOTALL)  # bare JSON object in prose
+    if m:
+        return m.group(0).strip()
+    m = re.search(r"\[.*\]", text, re.DOTALL)  # bare JSON array in prose
     return m.group(0).strip() if m else text
+
+
+def _extract_candidates(content: str) -> list | None:
+    """Parse the LLM reply and return a candidate list, or None if unparseable.
+
+    Tolerates: code-fenced JSON, a bare {"candidates":[...]} object, or a bare
+    [c1,c2,c3] array. Returns None (not raise) so the caller can retry.
+    """
+    try:
+        parsed = json.loads(_strip_code_fence(content))
+    except json.JSONDecodeError:
+        return None
+    if isinstance(parsed, dict) and isinstance(parsed.get("candidates"), list):
+        return parsed["candidates"]
+    if isinstance(parsed, list):
+        return parsed
+    return None
 
 
 def draft_candidates(
@@ -110,34 +140,45 @@ def draft_candidates(
     api_key: str,
     timeout: int = 120,
 ) -> list[dict]:
-    """Call the drafting LLM and return exactly 3 candidate dicts (ungated)."""
+    """Call the drafting LLM and return exactly 3 candidate dicts (ungated).
+
+    The LLM is non-deterministic and occasionally returns a different JSON shape;
+    we parse tolerantly and retry once with a stricter reminder before failing.
+    """
     user = (
         "De-identified chart signals (JSON):\n"
         + json.dumps(facts, ensure_ascii=False, indent=2)
         + "\n\nDraft exactly three distinct companion candidates per the framework "
         "and schema. Output ONLY the JSON object."
     )
-    resp = requests.post(
-        llm_base_url,
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        json={
-            "model": llm_model,
-            "messages": [
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user", "content": user},
-            ],
-            "temperature": 0.8,
-        },
-        timeout=timeout,
+    messages = [
+        {"role": "system", "content": _SYSTEM_PROMPT},
+        {"role": "user", "content": user},
+    ]
+    for attempt in range(2):
+        resp = requests.post(
+            llm_base_url,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={"model": llm_model, "messages": messages, "temperature": 0.8},
+            timeout=timeout,
+        )
+        if resp.status_code != 200:
+            raise RuntimeError(f"LLM HTTP {resp.status_code}: {resp.text[:300]}")
+        content = resp.json()["choices"][0]["message"]["content"]
+        candidates = _extract_candidates(content)
+        if isinstance(candidates, list) and len(candidates) == 3:
+            return candidates
+        # retry once with a corrective nudge
+        messages.append({"role": "assistant", "content": content})
+        messages.append({
+            "role": "user",
+            "content": "That did not parse as exactly three candidates in the required "
+                       "schema. Reply with ONLY a JSON object {\"candidates\":[c1,c2,c3]}, "
+                       "each candidate having exactly the schema fields, no prose, no code fence.",
+        })
+    raise ValueError(
+        f"LLM did not return 3 parseable candidates after retry; last content: {content[:200]}"
     )
-    if resp.status_code != 200:
-        raise RuntimeError(f"LLM HTTP {resp.status_code}: {resp.text[:300]}")
-    content = resp.json()["choices"][0]["message"]["content"]
-    parsed = json.loads(_strip_code_fence(content))
-    candidates = parsed.get("candidates")
-    if not isinstance(candidates, list) or len(candidates) != 3:
-        raise ValueError(f"LLM did not return 3 candidates; got {type(candidates).__name__}")
-    return candidates
 
 
 def author_and_record(

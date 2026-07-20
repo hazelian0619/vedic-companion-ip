@@ -338,13 +338,34 @@ class VisualCanon:
 # --------------------------------------------------------------------------- #
 
 # Patterns that must NEVER appear in an image request / public artifact.
+# Broadened after adversarial verification found ISO-only date, colon-only time,
+# 3-decimal-comma-only coord, and "born at"/"birthday"/"birth date"(space) bypasses.
+# Design vocabulary never contains dates, times, coordinates, or birth framing, so
+# erring toward catching more is safe (fail-closed rejects + regenerate).
 _PRIVATE_PATTERNS = [
-    (re.compile(r"\b\d{4}-\d{2}-\d{2}\b"), "raw birth date"),
-    (re.compile(r"\b\d{1,2}:\d{2}\b"), "raw birth time"),
-    (re.compile(r"-?\d{1,3}\.\d{3,},\s*-?\d{1,3}\.\d{3,}"), "lat/lon coordinates"),
-    (re.compile(r"\bAsia/|Europe/|America/|Africa/|Pacific/"), "IANA timezone"),
+    # --- dates: ISO, slash, month-name (both orders) ---
+    (re.compile(r"\b\d{4}-\d{1,2}-\d{1,2}\b"), "raw birth date (ISO)"),
+    (re.compile(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b"), "raw birth date (slash D/M/Y)"),
+    (re.compile(r"\b\d{4}/\d{1,2}/\d{1,2}\b"), "raw birth date (slash Y/M/D)"),
+    (re.compile(r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}\b", re.IGNORECASE), "raw birth date (month-name)"),
+    (re.compile(r"\b\d{1,2}(?:st|nd|rd|th)?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}\b", re.IGNORECASE), "raw birth date (day month-name)"),
+    # --- times: colon, 4-digit HHMM, AM/PM, dot ---
+    (re.compile(r"\b\d{1,2}:\d{2}\b"), "raw birth time (colon)"),
+    (re.compile(r"\b(?:[01]\d|2[0-3])[0-5]\d\b"), "raw birth time (HHMM)"),
+    (re.compile(r"\b\d{1,2}\s*[ap]\.?m\.?\b", re.IGNORECASE), "raw birth time (AM/PM)"),
+    (re.compile(r"\b\d{1,2}\.\d{2}\b"), "raw birth time (dot)"),
+    # --- coordinates: 2+-decimal comma pair, word/separator pair, or lat/lon labels ---
+    (re.compile(r"-?\d{1,3}\.\d{2,},\s*-?\d{1,3}\.\d{2,}"), "lat/lon coordinates"),
+    (re.compile(r"-?\d{1,3}\.\d+\s*(?:by|/|x)\s*-?\d{1,3}\.\d+", re.IGNORECASE), "lat/lon coordinates (word sep)"),
+    (re.compile(r"\blat(?:itude)?\s*[-\d.]+", re.IGNORECASE), "latitude label"),
+    (re.compile(r"\blon(?:gitude)?\s*[-\d.]+", re.IGNORECASE), "longitude label"),
+    # --- IANA timezone + nakshatra pada ---
+    (re.compile(r"\b(?:Asia|Europe|America|Africa|Pacific|Arctic|Atlantic|Indian)/[A-Za-z_]+"), "IANA timezone"),
     (re.compile(r"\bpada\b", re.IGNORECASE), "nakshatra pada"),
-    (re.compile(r"(?i)birth_(date|time|place)|birthplace|born in|born on"), "birth input reference"),
+    # --- birth-input references: underscore, space, "born at/on/in", birthday ---
+    (re.compile(r"\bbirth[_ ]?(?:date|time|place)\b", re.IGNORECASE), "birth input reference"),
+    (re.compile(r"\bbirth(?:place|day)\b", re.IGNORECASE), "birth input reference"),
+    (re.compile(r"\bborn\s+(?:at|on|in)\b", re.IGNORECASE), "birth input reference"),
     # The design-safe envelope legitimately carries the computation_source
     # label "pyjhora-swiss-ephemeris"; what must NEVER reach image prompts is
     # provenance DETAIL (ayanamsa degrees, engine-internal names). Note
@@ -373,16 +394,58 @@ ASTROLOGY_TERMS = (
     "Sagittarius", "Capricorn", "Aquarius", "Pisces", "nakshatra", "dasha",
     "atmakaraka", "ascendant", "chart", "horoscope", "jyotish", "vedic",
     "house", "retrograde", "mahadasha", "planet", "graha", "rasi",
+    # Nakshatra names (the LLM saw moon_nakshatra_name; could parrot it):
+    "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra",
+    "Punarvasu", "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni",
+    "Hasta", "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula",
+    "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha",
+    "Purva Bhadrapada", "Uttara Bhadrapada", "Revati",
+    # Japanese romaji planet names (Dosei=Saturn, Mokusei=Jupiter, Kinsei=Venus,
+    # Suisei=Mercury, Kasei=Mars) + Sun/Moon — ASCII, so the script-range
+    # catch-all below does NOT cover them; enumerate explicitly.
+    "Dosei", "Mokusei", "Kinsei", "Suisei", "Kasei", "Taiyou", "Taiyo", "Getsu",
 )
 
 #: Chinese astrology vocabulary that must never reach an image request or a
-#: public candidate. Defense-in-depth for LLM-authored candidates: even under
-#: the all-English product rule, an authoring model could slip a CJK term, and
-#: CJK terms bypass the English-only ASTROLOGY_TERMS list.
+#: public candidate. Enumerated for explicit reporting; the East-Asian script
+#: catch-all in astrology_term_scan is the comprehensive CJK/Hangul/kana defense.
 CHINESE_ASTROLOGY_TERMS = (
+    # generic
     "行星", "月亮", "太阳", "星座", "宫位", "上升", "大运", "星宿",
     "劫", "罗睺", "计都", "分盘", "飞星", "命主", "度数", "相位", "落宫",
+    # specific planet names — simplified (the actual planet names, not just 行星)
+    "土星", "木星", "金星", "水星", "火星", "天王星", "海王星", "冥王星",
+    "日", "月",
+    # traditional (used in traditional Chinese, Taiwanese, Japanese kanji contexts)
+    "太陽", "太陰", "羅睺", "計都",
+    # synonyms
+    "星曜", "大限", "命宫",
 )
+
+#: East-Asian script ranges. Candidates are ALL-English by product rule, so ANY
+#: CJK ideograph / Hangul / kana character in a candidate is a leak signal.
+#: This catch-all makes CJK coverage complete regardless of the enumerated
+#: CHINESE_ASTROLOGY_TERMS list (which can never be exhaustive). Latin Extended
+#: (e.g. the ä in "minä perhonen") is NOT in these ranges, so it is not flagged.
+_EAST_ASIAN_SCRIPT_RANGES = (
+    (0x3400, 0x4DBF),   # CJK Extension A
+    (0x4E00, 0x9FFF),   # CJK Unified Ideographs
+    (0x3000, 0x303F),   # CJK Symbols and Punctuation
+    (0x3040, 0x309F),   # Hiragana
+    (0x30A0, 0x30FF),   # Katakana
+    (0xAC00, 0xD7AF),   # Hangul Syllables
+    (0x1100, 0x11FF),   # Hangul Jamo
+)
+
+
+def _has_east_asian_script(text: str) -> str | None:
+    """Return the first East-Asian script char in text, or None."""
+    for ch in text:
+        o = ord(ch)
+        for lo, hi in _EAST_ASIAN_SCRIPT_RANGES:
+            if lo <= o <= hi:
+                return ch
+    return None
 
 
 def astrology_term_scan(text: str) -> list[str]:
@@ -390,10 +453,12 @@ def astrology_term_scan(text: str) -> list[str]:
 
     English terms match whole-word (case-insensitive) so ``Sun`` does not
     false-trip on ``sunflower``/``sunday`` and ``Saturn`` does not trip
-    ``saturnine``. Chinese terms match by substring (CJK has no regex word
-    boundary). Bare ``sign`` is intentionally omitted — it would false-trip on
-    the design vocabulary (``signature``, ``design``); the astrology sense is
-    covered by ``ascendant``/``chart``/``rasi`` etc.
+    ``saturnine``. Chinese terms match by substring. Any East-Asian script
+    character (CJK/kanji, Hangul, hiragana, katakana) is flagged — candidates
+    are English-only, so any such character is a leak signal (this makes CJK
+    coverage exhaustive, not dependent on an enumerated list). Japanese romaji
+    planet names + nakshatra names are enumerated in ASTROLOGY_TERMS since they
+    are ASCII and thus not caught by the script-range check.
     """
     low = text.lower()
     found: list[str] = []
@@ -403,6 +468,9 @@ def astrology_term_scan(text: str) -> list[str]:
     for term in CHINESE_ASTROLOGY_TERMS:
         if term in text:
             found.append(term)
+    ea = _has_east_asian_script(text)
+    if ea:
+        found.append(f"<east-asian-script:{ea}>")
     return found
 
 
