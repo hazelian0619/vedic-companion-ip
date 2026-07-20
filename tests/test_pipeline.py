@@ -15,6 +15,8 @@ import tempfile
 import stat
 from pathlib import Path
 
+import pytest
+
 PKG = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PKG / "skill"))
 from companion_ip_contract import (  # noqa: E402
@@ -86,12 +88,37 @@ def test_modules_import():
 
 
 # ---------------------------- Stage 1 e2e (deterministic) ------------------ #
+# These need a configured VEDIC_PY runtime + the gitignored intake fixture, so
+# they only run locally (skipped in CI / fresh clones).
+
+_HAS_VEDIC_PY = Path(VEDIC_PY).is_file()
+_HAS_INTAKE = INTAKE.is_file()
+_stage1_skip = pytest.mark.skipif(
+    not (_HAS_VEDIC_PY and _HAS_INTAKE),
+    reason="VEDIC_PY runtime or intake fixture not configured (local-only)",
+)
+_proto_skip = pytest.mark.skipif(
+    not (PKG / "appeal_dna.py").is_file(),
+    reason="prototype modules (appeal_dna etc.) not present in shipped-skill build",
+)
+
+
+@_proto_skip
+def test_modules_import():
+    import appeal_dna, concept_translate, llm_or_codex, build_dna_doc  # noqa: F401
+    assert callable(appeal_dna.bake_dna)
+    assert hasattr(concept_translate, "RULES_PROMPT")
+    assert callable(llm_or_codex.run_codex)
+
+
+# ---------------------------- Stage 1 e2e (deterministic) ------------------ #
 
 def _stage1(outdir):
     _run([VEDIC_PY, str(PKG / "skill" / "scripts" / "compute_chart_report.py"),
           "--intake", str(INTAKE), "--outdir", str(outdir)])
 
 
+@_stage1_skip
 def test_stage1_produces_private_and_design_safe():
     OUT.mkdir(parents=True, exist_ok=True)
     _stage1(OUT)
@@ -99,12 +126,14 @@ def test_stage1_produces_private_and_design_safe():
         assert (OUT / name).exists(), f"missing {name}"
 
 
+@_stage1_skip
 def test_stage1_private_outputs_are_owner_only():
     _stage1(OUT)
     for name in ("chart-report.json", "pet-profile.json"):
         assert stat.S_IMODE((OUT / name).stat().st_mode) == 0o600
 
 
+@_stage1_skip
 def test_pet_profile_is_privacy_clean():
     _stage1(OUT)
     blob = (OUT / "pet-profile.json").read_text()
@@ -115,6 +144,7 @@ def test_pet_profile_is_privacy_clean():
     assert birth_findings == [], birth_findings
 
 
+@_stage1_skip
 def test_stage1_sav_invariant_and_provenance():
     _stage1(OUT)
     d = json.loads((OUT / "chart-report.json").read_text())
@@ -125,6 +155,7 @@ def test_stage1_sav_invariant_and_provenance():
         assert getattr(prov, "computation_source", None) == "pyjhora-swiss-ephemeris"
 
 
+@_stage1_skip
 def test_compute_fails_closed_on_missing_birth():
     with tempfile.TemporaryDirectory() as td:
         tdp = Path(td)

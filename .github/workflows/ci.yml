@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        env:
+          # In CI there is no VEDIC_PY runtime and no gitignored intake
+          # fixture, so the Stage-1 e2e tests skip themselves (skipif). The
+          # privacy-gate, validator, author-drafter, and preflight tests run
+          # and mock all network/LLM/subprocess, so they are CI-safe.
+          VEDIC_PY: ""
+        run: |
+          python -m pytest -q
+
+      - name: Skill contract sanity
+        run: |
+          python -c "import sys; sys.path.insert(0,'skill'); import candidate_validator, companion_ip_contract, session_contract; print('imports OK')"
