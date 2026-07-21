@@ -1,9 +1,11 @@
 ---
 name: vedic-companion-ip
-description: Create a privacy-preserving companion-pet experience from locally computed birth-chart facts. Use when a user wants three candidate pet IPs, official hatch-pet animation packaging, and an imagev2 Character Bible without sending birth data, chart language, or internal rationale to image generation.
+description: Turn a user's birth chart into a self-adaptively matched desktop companion, computed locally from birth-chart facts. Use when a user wants three candidate pet IPs, official hatch-pet animation packaging, and an imagev2 Character Bible — without sending birth data, chart language, or internal rationale to image generation.
 ---
 
 # Vedic Companion IP
+
+**Vedic Companion IP turns a user's birth chart into a self-adaptively matched desktop companion.** The chart is computed locally (PyJHora + Swiss Ephemeris) and never leaves the host; what returns is one companion — silhouette, palette, and gait locked across nine animation states — authored from the chart's specifics, not a template, and never re-derived. A fail-closed privacy gate keeps birth data, chart language, and rationale local; only de-identified visual tokens reach image generation. The official `hatch-pet` skill owns the body (canonical base, animation rows, package); this skill owns the translation (chart → candidate → Character Bible) and the delivery gate.
 
 Build a companion pet in this fixed order:
 
