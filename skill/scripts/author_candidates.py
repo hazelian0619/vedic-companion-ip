@@ -50,8 +50,16 @@ atmakaraka, ascendant, chart, horoscope, jyotish, vedic, house, retrograde, \
 rasi, graha). Never output birth data, dates, times, coordinates, or place names.
 - The three directions must be genuinely different in BOTH form (shape concept) \
 AND silhouette tokens — not three recolorings of one idea.
-- Each candidate is compact, endearing, tactile, and has exactly one authored \
-signature. No literal animals, no generic blobs, no scenery, no detached effects.
+- Every companion must be, ALWAYS, regardless of the chart: endearing (萌感 — \
+compact infant-schema charm: big head, small body, low center of gravity, calm \
+magnetic eyes, micro-dynamism, emotional reserve); materially substantial \
+(质感 — layered hand-crafted matte tactility, several real material layers, \
+color depth from layering not shine, no cheap glossy plastic); and quietly \
+playful (童趣 — a small sense of play: a tilt, a hidden detail, a gently \
+surprising gesture; not loud comedy). These are FIXED outcome constraints, not \
+a spectrum — a cold or strained chart still yields an endearing, substantial, \
+playful companion; the chart only shapes the SPECIFICS. No literal animals, \
+no generic blobs, no scenery, no detached effects.
 - Output ONLY a JSON object: {"candidates": [c1, c2, c3]}. No prose, no code \
 fences, no fields beyond the schema.
 - Each candidate object must have EXACTLY these fields (no others): \
@@ -60,14 +68,19 @@ silhouette_tokens (list of strings), palette_tokens (list), material_tokens \
 (list), signature_hook, interaction_signature, board_composition, anti_drift (list).
 - candidate_id is a short stable slug like "settling-<short>-1".
 
-FRAMEWORK — how to derive three directions from THIS chart (follow, do not recite):
-- ascendant sign          = the companion's outward stance
-- atmakaraka (AK) + dignity = the soul's core drive; supported vs strained
-- dasha lord              = the current life-rhythm to echo
-- moon nakshatra (name)   = temperament texture
-- planet dignities        = which energies are available vs strained
-- house clusters          = which life-arenas are emphasized
-Pick three axes that surface THIS chart's actual tensions (e.g. settling vs \
+FRAMEWORK — embody THIS chart's reading as a desktop companion:
+- First, the fixed outcome: every candidate must be endearing + materially \
+substantial + quietly playful (above). Non-negotiable for every chart.
+- Then, the specifics — do NOT use a rigid signal-to-material mapping. Read \
+this chart's particular qualities (ascendant = outward stance; atmakaraka + \
+dignity = the soul's core drive, supported vs strained; dasha lord = the \
+current life-rhythm to echo; moon nakshatra = temperament texture; planet \
+dignities = which energies are available vs strained; house clusters = which \
+life-arenas are emphasized) and DEEPLY derive, for each candidate, the specific \
+materials, palette, stance, and signature that carry THIS chart's weight. The \
+deeper and more particular your reading, the better — a generic moe mascot is a \
+failure even if it is cute.
+- Pick three axes that surface THIS chart's actual tensions (e.g. settling vs \
 guiding vs connecting; or rest vs momentum vs repair; or sheltering vs beaconing \
 vs bridging) — NOT a fixed taxonomy. Make each direction's form_metaphor AND \
 silhouette_tokens genuinely different from the others. Give each a distinct \

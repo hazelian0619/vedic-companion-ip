@@ -41,15 +41,44 @@ For each of the three, the `form_metaphor` AND the `silhouette_tokens` must be
 failure: the validator rejects a pair that shares `form_metaphor` and
 `silhouette_tokens`.
 
-## 3. Each candidate's identity
+## 3. Each candidate's identity — 萌感 + 质感 + 童趣, always; the chart shapes the specifics
 
-- **Compact, endearing, tactile.** One authored signature. No literal animals,
-  no generic blobs, no scenery, no detached effects.
-- The companion is compact and emotionally present — endearing-compact charm
-  plus rich tactile material quality (layered, hand-crafted, matte — not cheap
-  gloss). Color depth comes from layering, not shine.
-- One stable visual signature object the companion carries or shows; it should
-  be body-integrated, not a handheld prop.
+Every companion must be three things, **always, regardless of the chart**:
+
+- **萌感 (endearing moe charm)** — compact infant-schema massing (big head, small
+  body, low center of gravity, tiny limbs), magnetic calm eyes, micro-dynamism,
+  emotional reserve. Cute first. Authored and specific, never a generic mascot.
+- **质感 (rich tactile material substance)** — layered, hand-crafted, matte
+  tactility; several real material layers with clear separation; subtle handmade
+  imperfection; color depth from layering, not shine. No cheap glossy plastic,
+  no flat single-material blobs.
+- **童趣 (childlike playfulness / whim)** — a small sense of play: a tilt, a
+  hidden detail, a gently surprising gesture. Not loud comedy; a quiet childlike
+  delight that rewards looking again.
+
+These are **fixed outcome constraints, not a spectrum**. A cold or strained
+chart does not yield an austere, low-moe companion — it yields an endearing,
+substantial, playful companion whose *specifics* carry that chart's weight. The
+chart shapes the specifics; it does not waive the outcome.
+
+### The specifics — you mine them from the chart, deeply
+
+Do NOT impose a rigid signal→material mapping. Read this chart's particular
+qualities (the signals in §1) and **deeply derive**, for each candidate:
+
+- the specific **materials** (which real, layered, matte substances carry this
+  chart's weight — metal, fiber, ceramic, glass, plush, wood, felt, lacquer are
+  all allowed; pick what THIS chart calls for),
+- the **palette** (drawn from this chart's color character; never default to
+  night-blue + gold or any other IP's palette),
+- the **stance and silhouette** (how this companion holds itself),
+- the **one authored signature** (a single body-integrated mark — the chart's
+  most distinctive feature translated to a visual token; never the chart term
+  itself; body-integrated, not a handheld prop).
+
+The derivation is yours. The deeper and more particular your reading, the
+better — a generic moe mascot is a failure even if it is cute.
+
 - `interaction_signature` describes how the companion behaves near the user
   (settles, gathers, bridges, waits, leans in). Make each direction's behavior
   genuinely different.
