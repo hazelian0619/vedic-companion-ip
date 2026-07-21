@@ -58,11 +58,11 @@ def test_records_private_ledger_with_hashes(tmp_path: Path):
     _chart_ready_session(tmp_path / "session")
     r = validate_and_record(
         [_good("shelter"), _good("beacon"), _good("bridge")], tmp_path / "session",
-        source_profile_sha256="abc", evidence_refs=["asc_sign:Aries"], llm_model="gpt-5.4-mini",
+        source_profile_sha256="abc", evidence_refs=["asc_sign:Aries"], llm_model="gpt-5.5",
     )
     ledger = json.loads(r.private_ledger_path.read_text(encoding="utf-8"))
     assert ledger["authored_by"] == "llm"
-    assert ledger["llm_model"] == "gpt-5.4-mini"
+    assert ledger["llm_model"] == "gpt-5.5"
     assert ledger["source_profile_sha256"] == "abc"
     assert len(ledger["candidate_hashes"]) == 3
     assert all("sha256" in h for h in ledger["candidate_hashes"])

@@ -93,7 +93,7 @@ python3 "$SKILL_DIR/scripts/author_candidates.py" \
   --session-dir /absolute/path/to/session \
   --api-key-env IMAGEV2_API_KEY \
   --llm-base-url "https://tok.fan/v1/chat/completions" \
-  --llm-model "gpt-5.4-mini"
+  --llm-model "gpt-5.5"
 ```
 
 The drafting-LLM provider is configurable (`--llm-base-url`, `--llm-model`,

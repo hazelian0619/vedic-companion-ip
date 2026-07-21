@@ -33,7 +33,10 @@ from candidate_validator import validate_and_record  # noqa: E402
 from session_contract import ProductSession  # noqa: E402
 
 DEFAULT_LLM_URL = "https://tok.fan/v1/chat/completions"
-DEFAULT_LLM_MODEL = "gpt-5.4-mini"
+# gpt-5.5 chosen over gpt-5.4-mini (richer 萌感/质感/童趣 + deeper chart-mining:
+# blind A/B, 3/3 assessors, avg 8.27 vs 6.73) and over gpt-5.6-* (5.6-sol times
+# out >120s; 5.6-luna returns a personality schema the gate rejects). Configurable.
+DEFAULT_LLM_MODEL = "gpt-5.5"
 
 # The standardized authoring framework, embedded as the system prompt so the
 # script is self-contained. references/candidate-authoring-framework.md is the

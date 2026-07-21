@@ -100,7 +100,7 @@ def test_author_sends_only_deidentified_facts_not_raw_birth_data(tmp_path: Path,
     out = ac.author_and_record(
         sess,
         llm_base_url="https://example/v1/chat/completions",
-        llm_model="gpt-5.4-mini",
+        llm_model="gpt-5.5",
         api_key_env="IMAGEV2_API_KEY",
     )
 
@@ -144,7 +144,7 @@ def test_author_strips_code_fence_from_llm_reply(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("IMAGEV2_API_KEY", "sk-test")
 
     out = ac.author_and_record(sess, llm_base_url="https://example/v1/chat/completions",
-        llm_model="gpt-5.4-mini", api_key_env="IMAGEV2_API_KEY")
+        llm_model="gpt-5.5", api_key_env="IMAGEV2_API_KEY")
     assert len(json.loads(out.read_text(encoding="utf-8"))["candidates"]) == 3
 
 
@@ -156,4 +156,4 @@ def test_author_raises_if_api_key_env_missing(tmp_path: Path, monkeypatch):
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     with pytest.raises(RuntimeError, match="API key"):
         ac.author_and_record(sess, llm_base_url="https://example/v1/chat/completions",
-            llm_model="gpt-5.4-mini", api_key_env="IMAGEV2_API_KEY")
+            llm_model="gpt-5.5", api_key_env="IMAGEV2_API_KEY")
